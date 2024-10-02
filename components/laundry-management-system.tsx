@@ -116,17 +116,6 @@ export function LaundryManagementSystemComponent() {
     const unsubscribeProductionRecords = firebaseServices.subscribeToProductionRecords(setProductionRecords);
     const unsubscribePrinters = firebaseServices.subscribeToPrinters(setPrinters);
 
-    // Calcular la producción diaria
-    const calculateDailyProduction = () => {
-      const today = new Date().toISOString().split('T')[0];
-      const dailyProduction = productionRecords
-        .filter(record => record.date === today)
-        .reduce((sum, record) => sum + record.amount, 0);
-      setDailyProduction(dailyProduction);
-    };
-
-    calculateDailyProduction();
-
     // Limpiar suscripciones
     return () => {
       unsubscribeUsers();
@@ -137,7 +126,21 @@ export function LaundryManagementSystemComponent() {
       unsubscribeProductionRecords();
       unsubscribePrinters();
     };
-  }, [productionRecords]);
+  }, []); // Solo ejecuta esto una vez al montar el componente
+
+  // Efecto para calcular producción diaria
+  useEffect(() => {
+    const calculateDailyProduction = () => {
+      const today = new Date().toISOString().split('T')[0];
+      const dailyProduction = productionRecords
+        .filter(record => record.date === today)
+        .reduce((sum, record) => sum + record.amount, 0);
+      setDailyProduction(dailyProduction);
+    };
+
+    calculateDailyProduction();
+  }, [productionRecords]); // Solo ejecuta esto cuando productionRecords cambie
+
   // Funciones de manejo de tipos de prendas
   const handleAddGarmentType = async () => {
     try {
