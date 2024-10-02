@@ -39,6 +39,7 @@ import { Tabs, TabsContent } from "./ui/tabs"
 import TabsClients from "./Screens/TabsClients"
 import TabsDashboard from "./Screens/TabsDashboard"
 import TabsFacturacion from "./Screens/TabsFacturacion"
+import TabsNewPrenda from "./Screens/TabsNewPrenda"
 import TabsProduction from "./Screens/TabsProduction"
 import TabsProducts from "./Screens/TabsProducts"
 import TabsReport from "./Screens/TabsReport"
@@ -56,6 +57,7 @@ import CancelAlert from "./Module/CancelAlert"
 import DeleteAlertDialog from "./Module/DeleteAlert"
 
 import { Client, GarmentType, Invoice, Printer as Printers, Product, ProductionRecord, User } from "../lib/types"
+
 
 
 export function LaundryManagementSystemComponent() {
@@ -468,7 +470,7 @@ export function LaundryManagementSystemComponent() {
         className="w-full md:w-64 bg-white shadow-md"
       >
         <div className="p-4">
-          <h1 className="text-2xl font-bold text-blue-600">LaundryPro</h1>
+          <h1 className="text-2xl font-bold text-blue-600">QuickClear</h1>
         </div>
         <nav className="mt-6">
           {[
@@ -630,68 +632,7 @@ export function LaundryManagementSystemComponent() {
       {/* ... (otros diálogos permanecen sin cambios) */}
 
       {/* Diálogo para agregar tipo de prenda */}
-      <Dialog open={isAddGarmentTypeDialogOpen} onOpenChange={setIsAddGarmentTypeDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Agregar Nuevo Tipo de Prenda</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault()
-            handleAddGarmentType()
-          }}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Nombre
-                </Label>
-                <Input
-                  id="name"
-                  value={newGarmentType.name}
-                  onChange={(e) => setNewGarmentType({ ...newGarmentType, name: e.target.value })}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="basePrice" className="text-right">
-                  Precio Base
-                </Label>
-                <Input
-                  id="basePrice"
-                  type="number"
-                  value={newGarmentType.basePrice}
-                  onChange={(e) => setNewGarmentType({ ...newGarmentType, basePrice: parseFloat(e.target.value) })}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">
-                  Descripción
-                </Label>
-                <Input
-                  id="description"
-                  value={newGarmentType.description}
-                  onChange={(e) => setNewGarmentType({ ...newGarmentType, description: e.target.value })}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="category" className="text-right">
-                  Categoría
-                </Label>
-                <Input
-                  id="category"
-                  value={newGarmentType.category}
-                  onChange={(e) => setNewGarmentType({ ...newGarmentType, category: e.target.value })}
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="submit">Agregar Tipo de Prenda</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <TabsNewPrenda isAddGarmentTypeDialogOpen={isAddGarmentTypeDialogOpen} setIsAddGarmentTypeDialogOpen={setIsAddGarmentTypeDialogOpen} newGarmentType={newGarmentType} setNewGarmentType={setNewGarmentType} handleAddGarmentType={handleAddGarmentType}></TabsNewPrenda>
 
       {/* Diálogo para editar tipo de prenda */}
       <Dialog open={isEditGarmentTypeDialogOpen} onOpenChange={setIsEditGarmentTypeDialogOpen}>

@@ -1,0 +1,21 @@
+[debug] [2024-10-02T16:14:54.812Z] ----------------------------------------------------------------------
+[debug] [2024-10-02T16:14:54.815Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\iaybar\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init
+[debug] [2024-10-02T16:14:54.815Z] CLI Version:   13.20.2
+[debug] [2024-10-02T16:14:54.816Z] Platform:      win32
+[debug] [2024-10-02T16:14:54.816Z] Node Version:  v20.12.2
+[debug] [2024-10-02T16:14:54.816Z] Time:          Wed Oct 02 2024 12:14:54 GMT-0400 (hora estándar del Atlántico)
+[debug] [2024-10-02T16:14:54.816Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-10-02T16:14:54.822Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-10-02T16:14:54.822Z] > authorizing via signed-in user (ismaelaybar53@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\Users\iaybar\Desktop\Lavanderia\core
+

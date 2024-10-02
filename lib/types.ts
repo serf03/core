@@ -33,14 +33,18 @@ interface GarmentType {
     description: string
     category: string
 }
-
+interface Attachment {
+    id: string
+    name: string
+    price: number
+}
 interface InvoiceItem {
     productId: string
     garmentTypeId: string
     quantity: number
     price: number
+    attachments: Attachment[]
 }
-
 interface Invoice {
     id: string
     clientId: string

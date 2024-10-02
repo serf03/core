@@ -1,4 +1,6 @@
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
+import React from 'react';
+import { Attachment, Client, GarmentType, Invoice, InvoiceItem, Product } from '../../lib/types';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
@@ -6,9 +8,42 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
+interface CrearFacturaModuleProps {
+    isCreateInvoiceDialogOpen: boolean;
+    setIsCreateInvoiceDialogOpen: (open: boolean) => void;
+    clientFilter: string;
+    setClientFilter: (filter: string) => void;
+    clientFilterType: 'cedula' | 'phone';
+    setClientFilterType: (type: 'cedula' | 'phone') => void;
+    newInvoice: Omit<Invoice, 'id' | 'date'>;
+    setNewInvoice: React.Dispatch<React.SetStateAction<Omit<Invoice, 'id' | 'date'>>>;
+    filterClients: () => Client[];
+    products: Product[];
+    garmentTypes: GarmentType[];
+    calculatePrice: (productId: string, garmentTypeId: string) => number;
+    calculatePickupDate: (items: InvoiceItem[]) => string;
+    handleCreateInvoice: () => void;
+}
 
-function CrearFacturaModule(props) {
-    console.log(props)
+function CrearInvoiceModule(props: CrearFacturaModuleProps) {
+    const handleAddAttachment = (itemIndex: number) => {
+        const newItems = [...props.newInvoice.items];
+        newItems[itemIndex].attachments.push({ id: Date.now().toString(), name: '', price: 0 });
+        props.setNewInvoice({ ...props.newInvoice, items: newItems });
+    };
+
+    const handleRemoveAttachment = (itemIndex: number, attachmentIndex: number) => {
+        const newItems = [...props.newInvoice.items];
+        newItems[itemIndex].attachments.splice(attachmentIndex, 1);
+        props.setNewInvoice({ ...props.newInvoice, items: newItems });
+    };
+
+    const handleAttachmentChange = (itemIndex: number, attachmentIndex: number, field: keyof Attachment, value: string | number) => {
+        const newItems = [...props.newInvoice.items];
+        newItems[itemIndex].attachments[attachmentIndex][field] = value;
+        props.setNewInvoice({ ...props.newInvoice, items: newItems });
+    };
+
     return (
         <Dialog open={props.isCreateInvoiceDialogOpen} onOpenChange={props.setIsCreateInvoiceDialogOpen}>
             <DialogContent className="max-w-7xl">
@@ -54,11 +89,11 @@ function CrearFacturaModule(props) {
                                 Cliente
                             </Label>
                             <Select
-                                value={props.newInvoice.clientId.toString()}
+                                value={props.newInvoice.clientId}
                                 onValueChange={(value) =>
                                     props.setNewInvoice({
                                         ...props.newInvoice,
-                                        clientId: parseInt(value),
+                                        clientId: value,
                                     })
                                 }
                             >
@@ -67,7 +102,7 @@ function CrearFacturaModule(props) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {props.filterClients().map((client) => (
-                                        <SelectItem key={client.id} value={client.id.toString()}>
+                                        <SelectItem key={client.id} value={client.id}>
                                             {client.name}
                                         </SelectItem>
                                     ))}
@@ -82,12 +117,12 @@ function CrearFacturaModule(props) {
                             </Label>
                             <Select
                                 onValueChange={(value) => {
-                                    const productId = parseInt(value);
+                                    const productId = value;
                                     props.setNewInvoice({
                                         ...props.newInvoice,
                                         items: [
                                             ...props.newInvoice.items,
-                                            { productId, garmentTypeId: 0, quantity: 1, price: 0 },
+                                            { productId, garmentTypeId: '', quantity: 1, price: 0, attachments: [] },
                                         ],
                                     });
                                 }}
@@ -97,7 +132,7 @@ function CrearFacturaModule(props) {
                                 </SelectTrigger>
                                 <SelectContent>
                                     {props.products.map((product) => (
-                                        <SelectItem key={product.id} value={product.id.toString()}>
+                                        <SelectItem key={product.id} value={product.id}>
                                             {product.name}
                                         </SelectItem>
                                     ))}
@@ -114,6 +149,7 @@ function CrearFacturaModule(props) {
                                         <TableHead>Tipo de Prenda</TableHead>
                                         <TableHead>Cantidad</TableHead>
                                         <TableHead>Precio</TableHead>
+                                        <TableHead>Attachments</TableHead>
                                         <TableHead>Subtotal</TableHead>
                                         <TableHead>Acción</TableHead>
                                     </TableRow>
@@ -126,9 +162,9 @@ function CrearFacturaModule(props) {
                                                 <TableCell>{product?.name}</TableCell>
                                                 <TableCell>
                                                     <Select
-                                                        value={item.garmentTypeId.toString()}
+                                                        value={item.garmentTypeId}
                                                         onValueChange={(value) => {
-                                                            const garmentTypeId = parseInt(value);
+                                                            const garmentTypeId = value;
                                                             const newItems = [...props.newInvoice.items];
                                                             newItems[index].garmentTypeId = garmentTypeId;
                                                             newItems[index].price = props.calculatePrice(
@@ -139,7 +175,7 @@ function CrearFacturaModule(props) {
                                                                 ...props.newInvoice,
                                                                 items: newItems,
                                                                 total: newItems.reduce(
-                                                                    (sum, item) => sum + item.price * item.quantity,
+                                                                    (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
                                                                     0
                                                                 ),
                                                             });
@@ -150,7 +186,7 @@ function CrearFacturaModule(props) {
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {props.garmentTypes.map((type) => (
-                                                                <SelectItem key={type.id} value={type.id.toString()}>
+                                                                <SelectItem key={type.id} value={type.id}>
                                                                     {type.name}
                                                                 </SelectItem>
                                                             ))}
@@ -169,7 +205,7 @@ function CrearFacturaModule(props) {
                                                                 ...props.newInvoice,
                                                                 items: newItems,
                                                                 total: newItems.reduce(
-                                                                    (sum, item) => sum + item.price * item.quantity,
+                                                                    (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
                                                                     0
                                                                 ),
                                                             });
@@ -178,7 +214,43 @@ function CrearFacturaModule(props) {
                                                     />
                                                 </TableCell>
                                                 <TableCell>${item.price}</TableCell>
-                                                <TableCell>${item.price * item.quantity}</TableCell>
+                                                <TableCell>
+                                                    {item.attachments.map((attachment, attIndex) => (
+                                                        <div key={attachment.id} className="flex items-center space-x-2 mb-2">
+                                                            <Input
+                                                                placeholder="Nombre"
+                                                                value={attachment.name}
+                                                                onChange={(e) => handleAttachmentChange(index, attIndex, 'name', e.target.value)}
+                                                                className="w-1/2"
+                                                            />
+                                                            <Input
+                                                                type="number"
+                                                                placeholder="Precio"
+                                                                value={attachment.price}
+                                                                onChange={(e) => handleAttachmentChange(index, attIndex, 'price', parseFloat(e.target.value))}
+                                                                className="w-1/4"
+                                                            />
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => handleRemoveAttachment(index, attIndex)}
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleAddAttachment(index)}
+                                                    >
+                                                        <Plus className="h-4 w-4 mr-2" />
+                                                        Agregar Attachment
+                                                    </Button>
+                                                </TableCell>
+                                                <TableCell>
+                                                    ${item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0)}
+                                                </TableCell>
                                                 <TableCell>
                                                     <Button
                                                         variant="destructive"
@@ -191,7 +263,7 @@ function CrearFacturaModule(props) {
                                                                 ...props.newInvoice,
                                                                 items: newItems,
                                                                 total: newItems.reduce(
-                                                                    (sum, item) => sum + item.price * item.quantity,
+                                                                    (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
                                                                     0
                                                                 ),
                                                             });
@@ -218,6 +290,7 @@ function CrearFacturaModule(props) {
                                 </span>
                             </div>
                         </div>
+
                         {/* Color Picker */}
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="color" className="text-right">
@@ -250,4 +323,4 @@ function CrearFacturaModule(props) {
     );
 }
 
-export default CrearFacturaModule;
+export default CrearInvoiceModule;
