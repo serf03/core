@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -18,9 +22,30 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "components/Module/EditClientsDialog.jsx",
+    "components/Module/EditProductDialog.jsx",
+    "components/Module/InvoicePreviewDialog.jsx",
+    "components/Module/StateInvoiceDialog.jsx",
+    "components/Module/NewProductDialog.jsx",
+    "components/Module/MainContent.jsx",
+    "components/Screens/TabsUsuario.jsx",
+    "components/Screens/TabsReport.jsx",
+    "components/Screens/TabsProduction.tsx",
+    "components/Screens/TabsFacturacion.jsx",
+    "components/Screens/TabsDashboard.jsx",
+    "components/Screens/TabsClients.jsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

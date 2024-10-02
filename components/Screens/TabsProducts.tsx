@@ -7,10 +7,28 @@ import { TabsContent } from '../ui/tabs';
 
 // Importar iconos
 import { Edit, Plus, Trash } from 'lucide-react';
+interface Product {
+    id: string;
+    name: string;
+    price: number;
+    stock: number;
+    productionTime: number;
+    status: 'Disponible' | 'En Uso' | 'En Mantenimiento' | 'Agotado';
+}
 
-function TabsProducts(props) {
+// Definición de las propiedades del componente
+interface TabsProductsProps {
+    products: Product[];
+    setIsAddProductDialogOpen: (isOpen: boolean) => void;
+    searchTerm: string;
+    setSearchTerm: (term: string) => void;
+    setEditingProduct: (product: Product) => void;
+    setIsEditProductDialogOpen: (isOpen: boolean) => void;
+    handleDeleteProduct: (id: string) => void; // Cambié el tipo a string para que coincida con la interfaz
+}
+function TabsProducts(props: TabsProductsProps) {
     return (
-        <TabsContent value="products" className="space-y-4">
+        <TabsContent value="productsc" className="space-y-4">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Productos</h2>
                 <Button onClick={() => props.setIsAddProductDialogOpen(true)}>

@@ -38,11 +38,25 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
         props.setNewInvoice({ ...props.newInvoice, items: newItems });
     };
 
-    const handleAttachmentChange = (itemIndex: number, attachmentIndex: number, field: keyof Attachment, value: string | number) => {
+    const handleAttachmentChange = (
+        itemIndex: number,
+        attachmentIndex: number,
+        field: keyof Attachment,
+        value: string | number
+    ) => {
         const newItems = [...props.newInvoice.items];
-        newItems[itemIndex].attachments[attachmentIndex][field] = value;
+
+        // Verifica si el índice del item y el índice del attachment son válidos
+        if (newItems[itemIndex] && newItems[itemIndex].attachments[attachmentIndex]) {
+            newItems[itemIndex].attachments[attachmentIndex] = {
+                ...newItems[itemIndex].attachments[attachmentIndex],
+                [field]: value, // Usa la propiedad de campo para actualizar el valor
+            };
+        }
+
         props.setNewInvoice({ ...props.newInvoice, items: newItems });
     };
+
 
     return (
         <Dialog open={props.isCreateInvoiceDialogOpen} onOpenChange={props.setIsCreateInvoiceDialogOpen}>

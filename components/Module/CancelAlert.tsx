@@ -1,9 +1,25 @@
-// Importación de componentes de UI
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+// CancelAlert.tsx
 
-function CancelAlert(props) {
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
+} from '../ui/alert-dialog';
+
+interface CancelAlertProps {
+    isCancelDialogOpen: boolean;
+    setIsCancelDialogOpen: (open: boolean) => void;
+    confirmCancelInvoice: () => void;
+}
+
+function CancelAlert({ isCancelDialogOpen, setIsCancelDialogOpen, confirmCancelInvoice }: CancelAlertProps) {
     return (
-        <AlertDialog open={props.isCancelDialogOpen} onOpenChange={props.setIsCancelDialogOpen}>
+        <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>¿Está seguro de que desea cancelar esta factura?</AlertDialogTitle>
@@ -13,7 +29,7 @@ function CancelAlert(props) {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction onClick={props.confirmCancelInvoice}>Confirmar</AlertDialogAction>
+                    <AlertDialogAction onClick={confirmCancelInvoice}>Confirmar</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

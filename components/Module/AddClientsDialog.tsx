@@ -1,10 +1,28 @@
-// Importar componentes de UI
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
-function AddClientsDialog(props) {
+// Define la interfaz para los props
+interface AddClientsDialogProps {
+    isAddClientDialogOpen: boolean;
+    setIsAddClientDialogOpen: (open: boolean) => void;
+    newClient: {
+        name: string;
+        email: string;
+        phone: string;
+        cedula: string;
+    };
+    setNewClient: (client: {
+        name: string;
+        email: string;
+        phone: string;
+        cedula: string;
+    }) => void;
+    handleAddClient: () => void;
+}
+
+const AddClientsDialog: React.FC<AddClientsDialogProps> = (props) => {
     return (
         <Dialog open={props.isAddClientDialogOpen} onOpenChange={props.setIsAddClientDialogOpen}>
             <DialogContent>
@@ -12,7 +30,7 @@ function AddClientsDialog(props) {
                     <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
                 </DialogHeader>
                 <form
-                    onSubmit={e => {
+                    onSubmit={(e) => {
                         e.preventDefault();
                         props.handleAddClient();
                     }}
@@ -25,7 +43,7 @@ function AddClientsDialog(props) {
                             <Input
                                 id="name"
                                 value={props.newClient.name}
-                                onChange={e =>
+                                onChange={(e) =>
                                     props.setNewClient({
                                         ...props.newClient,
                                         name: e.target.value,
@@ -42,7 +60,7 @@ function AddClientsDialog(props) {
                                 id="email"
                                 type="email"
                                 value={props.newClient.email}
-                                onChange={e =>
+                                onChange={(e) =>
                                     props.setNewClient({
                                         ...props.newClient,
                                         email: e.target.value,
@@ -58,7 +76,7 @@ function AddClientsDialog(props) {
                             <Input
                                 id="phone"
                                 value={props.newClient.phone}
-                                onChange={e =>
+                                onChange={(e) =>
                                     props.setNewClient({
                                         ...props.newClient,
                                         phone: e.target.value,
@@ -74,7 +92,7 @@ function AddClientsDialog(props) {
                             <Input
                                 id="cedula"
                                 value={props.newClient.cedula}
-                                onChange={e =>
+                                onChange={(e) =>
                                     props.setNewClient({
                                         ...props.newClient,
                                         cedula: e.target.value,
@@ -91,6 +109,6 @@ function AddClientsDialog(props) {
             </DialogContent>
         </Dialog>
     );
-}
+};
 
 export default AddClientsDialog;

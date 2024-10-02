@@ -1,92 +1,113 @@
 // Importar componentes de UI
 import { Button } from '../ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { TabsContent } from '../ui/tabs';
 
-function TabsProduction(props) {
+// Definir la interfaz para las propiedades del componente
+interface Client {
+    id: string
+    name: string
+    email: string
+    phone: string
+    cedula: string
+}
+
+interface EditClientsDialogProps {
+    isEditClientDialogOpen: boolean;
+    setIsEditClientDialogOpen: (isOpen: boolean) => void;
+    editingClient: Client | null;
+    setEditingClient: (client: Client | null) => void;
+    handleUpdateClient: () => void;
+}
+
+function EditClientsDialog(props: EditClientsDialogProps) {
     return (
-        <TabsContent value="production" className="space-y-4">
-            <h2 className="text-2xl font-bold">Producción</h2>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Registrar Producción Diaria</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <form
-                        onSubmit={e => {
-                            e.preventDefault();
-                            const amount = parseFloat((e.currentTarget.elements.namedItem('amount') as HTMLInputElement).value);
-                            const type = ((e.currentTarget.elements.namedItem('type') as HTMLSelectElement).value as 'Lavado' | 'Planchado' | 'Empaquetado');
-                            props.handleRegisterProduction(amount, type);
-                        }}
-                    >
-                        <div className="grid w-full items-center gap-4">
-                            <div className="flex flex-col space-y-1.5">
-                                <Label htmlFor="amount">Cantidad (kg)</Label>
-                                <Input id="amount" type="number" placeholder="0" />
-                            </div>
-                            <div className="flex flex-col space-y-1.5">
-                                <Label htmlFor="type">Tipo de Producción</Label>
-                                <Select name="type">
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Seleccione el tipo" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Lavado">Lavado</SelectItem>
-                                        <SelectItem value="Planchado">Planchado</SelectItem>
-                                        <SelectItem value="Empaquetado">Empaquetado</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <Button type="submit">Registrar Producción</Button>
+        <Dialog open={props.isEditClientDialogOpen} onOpenChange={props.setIsEditClientDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Editar Cliente</DialogTitle>
+                </DialogHeader>
+                <form
+                    onSubmit={e => {
+                        e.preventDefault();
+                        props.handleUpdateClient();
+                    }}
+                >
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="editName" className="text-right">
+                                Nombre
+                            </Label>
+                            <Input
+                                id="editName"
+                                value={props.editingClient?.name || ''}
+                                onChange={e => {
+                                    const newClient = props.editingClient
+                                        ? { ...props.editingClient, name: e.target.value }
+                                        : null;
+                                    props.setEditingClient(newClient);
+                                }}
+                                className="col-span-3"
+                            />
                         </div>
-                    </form>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Historial de Producción</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="mb-4">
-                        <Input
-                            placeholder="Buscar registro de producción..."
-                            value={props.searchTerm}
-                            onChange={e => props.setSearchTerm(e.target.value)}
-                        />
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="editEmail" className="text-right">
+                                Correo
+                            </Label>
+                            <Input
+                                id="editEmail"
+                                type="email"
+                                value={props.editingClient?.email || ''}
+                                onChange={e => {
+                                    const newClient = props.editingClient
+                                        ? { ...props.editingClient, email: e.target.value }
+                                        : null;
+                                    props.setEditingClient(newClient);
+                                }}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="editPhone" className="text-right">
+                                Teléfono
+                            </Label>
+                            <Input
+                                id="editPhone"
+                                value={props.editingClient?.phone || ''}
+                                onChange={e => {
+                                    const newClient = props.editingClient
+                                        ? { ...props.editingClient, phone: e.target.value }
+                                        : null;
+                                    props.setEditingClient(newClient);
+                                }}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="editCedula" className="text-right">
+                                Cédula
+                            </Label>
+                            <Input
+                                id="editCedula"
+                                value={props.editingClient?.cedula || ''}
+                                onChange={e => {
+                                    const newClient = props.editingClient
+                                        ? { ...props.editingClient, cedula: e.target.value }
+                                        : null;
+                                    props.setEditingClient(newClient);
+                                }}
+                                className="col-span-3"
+                            />
+                        </div>
                     </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Fecha</TableHead>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead>Cantidad (kg)</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {props.productionRecords
-                                .filter(
-                                    record =>
-                                        record.date.includes(props.searchTerm) ||
-                                        record.type.toLowerCase().includes(props.searchTerm.toLowerCase())
-                                )
-                                .map(record => (
-                                    <TableRow key={record.id}>
-                                        <TableCell>{record.date}</TableCell>
-                                        <TableCell>{record.type}</TableCell>
-                                        <TableCell>{record.amount} kg</TableCell>
-                                    </TableRow>
-                                ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </TabsContent>
+                    <DialogFooter>
+                        <Button type="submit">Actualizar Cliente</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     );
 }
 
-export default TabsProduction;
+export default EditClientsDialog;

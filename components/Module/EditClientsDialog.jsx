@@ -4,6 +4,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
+
+
 function EditClientsDialog(props) {
     return (
         <Dialog open={props.isEditClientDialogOpen} onOpenChange={props.setIsEditClientDialogOpen}>

@@ -69,6 +69,5 @@ interface Printer {
     isDefault: boolean
 }
 
-export type {
-    Client, GarmentType, Invoice, InvoiceItem, Printer, Product, ProductionRecord, User, UserRole
-}
+export type { Attachment, Client, GarmentType, Invoice, InvoiceItem, Printer, Product, ProductionRecord, User, UserRole }
+

@@ -2,28 +2,64 @@
 import { toast } from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
-function DeleteAlertDialog(props) {
+interface Client {
+    id: string
+    name: string
+    email: string
+    phone: string
+    cedula: string
+}
+
+interface Product {
+    id: string
+    name: string
+    price: number
+    stock: number
+    productionTime: number
+    status: 'Disponible' | 'En Uso' | 'En Mantenimiento' | 'Agotado'
+}
+
+// Define las propiedades del componente
+interface DeleteAlertDialogProps {
+    isDeleteDialogOpen: boolean;
+    setIsDeleteDialogOpen: (isOpen: boolean) => void;
+    itemToDelete: { id: string; type: 'client' | 'product' } | null;
+    setItemToDelete: (item: null) => void;
+    setClients: (clients: (prevClients: Client[]) => Client[]) => void; // Cambia aquí
+    setProducts: (products: (prevProducts: Product[]) => Product[]) => void; // Cambia aquí
+}
+
+function DeleteAlertDialog({
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    itemToDelete,
+    setItemToDelete,
+    setClients,
+    setProducts,
+}: DeleteAlertDialogProps) {
     const handleDelete = () => {
-        if (props.itemToDelete) {
-            if (props.itemToDelete.type === 'client') {
-                props.setClients(prevClients => prevClients.filter(client => client.id !== props.itemToDelete.id));
+        if (itemToDelete) {
+            if (itemToDelete.type === 'client') {
+                setClients(prevClients => prevClients.filter(client => client.id !== itemToDelete.id));
             } else {
-                props.setProducts(prevProducts => prevProducts.filter(product => product.id !== props.itemToDelete.id));
+                setProducts(prevProducts => prevProducts.filter(product => product.id !== itemToDelete.id));
             }
 
-            props.setIsDeleteDialogOpen(false);
-            props.setItemToDelete(null);
-            toast.success(`${props.itemToDelete.type === 'client' ? 'Cliente' : 'Producto'} eliminado exitosamente`);
+            setIsDeleteDialogOpen(false);
+            setItemToDelete(null);
+            toast.success(`${itemToDelete.type === 'client' ? 'Cliente' : 'Producto'} eliminado exitosamente`);
         }
     };
 
     return (
-        <AlertDialog open={props.isDeleteDialogOpen} onOpenChange={props.setIsDeleteDialogOpen}>
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>¿Está seguro de que desea eliminar este {props.itemToDelete?.type === 'client' ? 'cliente' : 'producto'}?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        ¿Está seguro de que desea eliminar este {itemToDelete?.type === 'client' ? 'cliente' : 'producto'}?
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        Esta acción no se puede deshacer. El {props.itemToDelete?.type === 'client' ? 'cliente' : 'producto'} será eliminado permanentemente.
+                        Esta acción no se puede deshacer. El {itemToDelete?.type === 'client' ? 'cliente' : 'producto'} será eliminado permanentemente.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

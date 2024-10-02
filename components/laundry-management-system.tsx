@@ -40,7 +40,6 @@ import TabsClients from "./Screens/TabsClients"
 import TabsDashboard from "./Screens/TabsDashboard"
 import TabsFacturacion from "./Screens/TabsFacturacion"
 import TabsNewPrenda from "./Screens/TabsNewPrenda"
-import TabsProduction from "./Screens/TabsProduction"
 import TabsProducts from "./Screens/TabsProducts"
 import TabsReport from "./Screens/TabsReport"
 import TabsUsuario from "./Screens/TabsUsuario"
@@ -138,7 +137,7 @@ export function LaundryManagementSystemComponent() {
       unsubscribeProductionRecords();
       unsubscribePrinters();
     };
-  });
+  }, [productionRecords]);
   // Funciones de manejo de tipos de prendas
   const handleAddGarmentType = async () => {
     try {
@@ -340,17 +339,17 @@ export function LaundryManagementSystemComponent() {
   };
 
 
-  const handleRegisterProduction = async (amount: number, type: 'Lavado' | 'Planchado' | 'Empaquetado') => {
-    try {
-      const date = new Date().toISOString().split('T')[0];
-      const newRecord = { date, amount, type };
-      await firebaseServices.addProductionRecord(newRecord);
-      toast.success(`Producción registrada: ${amount} kg de ${type}`);
-    } catch (error) {
-      console.error("Error registering production: ", error);
-      toast.error("Error al registrar la producción");
-    }
-  };
+  // const handleRegisterProduction = async (amount: number, type: 'Lavado' | 'Planchado' | 'Empaquetado') => {
+  //   try {
+  //     const date = new Date().toISOString().split('T')[0];
+  //     const newRecord = { date, amount, type };
+  //     await firebaseServices.addProductionRecord(newRecord);
+  //     toast.success(`Producción registrada: ${amount} kg de ${type}`);
+  //   } catch (error) {
+  //     console.error("Error registering production: ", error);
+  //     toast.error("Error al registrar la producción");
+  //   }
+  // };
 
   const handleChangeInvoiceStatus = async (invoice: Invoice, newStatus: Invoice['status']) => {
     try {
@@ -476,7 +475,7 @@ export function LaundryManagementSystemComponent() {
           {[
             { name: "Dashboard", icon: <LayoutDashboard size={20} />, id: "dashboard" },
             { name: "Facturación", icon: <FileText size={20} />, id: "billing" },
-            { name: "Producción", icon: <Package size={20} />, id: "production" },
+            // { name: "Producción", icon: <Package size={20} />, id: "production" },
             { name: "Usuarios", icon: <Users size={20} />, id: "users" },
             { name: "Clientes", icon: <Users size={20} />, id: "clients" },
             { name: "Productos", icon: <Package size={20} />, id: "products" },
@@ -604,23 +603,52 @@ export function LaundryManagementSystemComponent() {
                     </CardContent>
                   </Card>
                 </TabsContent>
+
                 {/* Dashboard Tab */}
-                <TabsDashboard products={products} length={products.filter(p => p.stock < 10).length} invoices={invoices} dailyProduction={dailyProduction}></TabsDashboard>
+                <TabsDashboard products={products} length={products.filter(p => p.stock < 10).length} invoices={invoices} dailyProduction={dailyProduction} />
 
                 {/* Facturación Tab */}
-                <TabsFacturacion clients={clients} invoices={invoices} setIsCreateInvoiceDialogOpen={setIsCreateInvoiceDialogOpen} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setIsChangeInvoiceStatusDialogOpen={setIsChangeInvoiceStatusDialogOpen} setInvoiceToChangeStatus={setInvoiceToChangeStatus} handlePrintInvoice={handlePrintInvoice} handleCancelInvoice={handleCancelInvoice}></TabsFacturacion>
+                <TabsFacturacion
+                  clients={clients}
+                  invoices={invoices}
+                  setIsCreateInvoiceDialogOpen={setIsCreateInvoiceDialogOpen}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  setIsChangeInvoiceStatusDialogOpen={setIsChangeInvoiceStatusDialogOpen}
+                  setInvoiceToChangeStatus={setInvoiceToChangeStatus}
+                  handlePrintInvoice={handlePrintInvoice}
+                  handleCancelInvoice={handleCancelInvoice}
+                />
 
-                {/* Producción Tab */}
-                <TabsProduction productionRecords={productionRecords} searchTerm={searchTerm} setSearchTerm={setSearchTerm} handleRegisterProduction={handleRegisterProduction}></TabsProduction>
 
                 {/* Usuarios Tab */}
-                <TabsUsuario users={users} searchTerm={searchTerm} setSearchTerm={setSearchTerm}></TabsUsuario>
+                <TabsUsuario
+                  users={users}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                />
 
                 {/* Clientes Tab */}
-                <TabsClients clients={clients} setIsAddClientDialogOpen={setIsAddClientDialogOpen} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setEditingClient={setEditingClient} setIsEditClientDialogOpen={setIsEditClientDialogOpen} handleDeleteClient={handleDeleteClient}></TabsClients>
+                <TabsClients
+                  clients={clients}
+                  setIsAddClientDialogOpen={setIsAddClientDialogOpen}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  setEditingClient={setEditingClient}
+                  setIsEditClientDialogOpen={setIsEditClientDialogOpen}
+                  handleDeleteClient={handleDeleteClient}
+                />
 
                 {/* Productos Tab */}
-                <TabsProducts products={products} setIsAddProductDialogOpen={setIsAddProductDialogOpen} searchTerm={searchTerm} setSearchTerm={setSearchTerm} setEditingProduct={setEditingProduct} setIsEditProductDialogOpen={setIsEditProductDialogOpen} handleDeleteProduct={handleDeleteProduct}></TabsProducts>
+                <TabsProducts
+                  products={products}
+                  setIsAddProductDialogOpen={setIsAddProductDialogOpen}
+                  searchTerm={searchTerm}
+                  setSearchTerm={setSearchTerm}
+                  setEditingProduct={setEditingProduct}
+                  setIsEditProductDialogOpen={setIsEditProductDialogOpen}
+                  handleDeleteProduct={handleDeleteProduct}
+                />
 
                 {/* Reportes Tab */}
                 <TabsReport />
@@ -629,6 +657,7 @@ export function LaundryManagementSystemComponent() {
           </AnimatePresence>
         </main>
       </div>
+
       {/* ... (otros diálogos permanecen sin cambios) */}
 
       {/* Diálogo para agregar tipo de prenda */}
@@ -741,7 +770,15 @@ export function LaundryManagementSystemComponent() {
 
       <CancelAlert isCancelDialogOpen={isCancelDialogOpen} setIsCancelDialogOpen={setIsCancelDialogOpen} confirmCancelInvoice={confirmCancelInvoice}></CancelAlert>
 
-      <DeleteAlertDialog clients={clients} setClients={setClients} products={products} setProducts={setProducts} isDeleteDialogOpen={isDeleteDialogOpen} setIsDeleteDialogOpen={setIsDeleteDialogOpen} itemToDelete={itemToDelete} setItemToDelete={setItemToDelete}></DeleteAlertDialog>
+      <DeleteAlertDialog
+        isDeleteDialogOpen={isDeleteDialogOpen}
+        setIsDeleteDialogOpen={setIsDeleteDialogOpen}
+        itemToDelete={itemToDelete}
+        setItemToDelete={setItemToDelete}
+        setClients={setClients}
+        setProducts={setProducts}
+      />
+
 
       <StateFacturaDialog isChangeInvoiceStatusDialogOpen={isChangeInvoiceStatusDialogOpen} setIsChangeInvoiceStatusDialogOpen={setIsChangeInvoiceStatusDialogOpen} invoiceToChangeStatus={invoiceToChangeStatus} handleChangeInvoiceStatus={handleChangeInvoiceStatus}></StateFacturaDialog>
       <Toaster />
