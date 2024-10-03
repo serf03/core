@@ -1,5 +1,5 @@
-import { LaundryManagementSystemComponent } from "@/components/laundry-management-system"
+import { App } from "../components/App"
 
 export default function Page() {
-  return <LaundryManagementSystemComponent />
+  return <App />
 }

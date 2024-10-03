@@ -31,6 +31,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "**/*.jsx",
     ".next/types/**/*.ts",
     "components/Module/EditClientsDialog.jsx",
     "components/Module/EditProductDialog.jsx",
@@ -43,7 +44,8 @@
     "components/Screens/TabsProduction.tsx",
     "components/Screens/TabsFacturacion.jsx",
     "components/Screens/TabsDashboard.jsx",
-    "components/Screens/TabsClients.jsx"
+    "components/Screens/TabsClients.jsx",
+    "components/Module/InvoiceReceiptDialog.jsx"
   ],
   "exclude": [
     "node_modules"

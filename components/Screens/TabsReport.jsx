@@ -13,7 +13,8 @@ function TabsProducts(props) {
         <TabsContent value="products" className="space-y-4">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Productos</h2>
-                <Button onClick={() => props.setIsAddProductDialogOpen(true)}>
+                <Button onClick={() => { } //props.setIsAddProductDialogOpen(true)
+                }>
                     <Plus className="mr-2 h-4 w-4" /> Agregar Producto
                 </Button>
             </div>

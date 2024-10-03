@@ -1,4 +1,6 @@
 // Importar componentes de UI
+import { useEffect, useState } from 'react';
+// import * as firebaseServices from "../../lib/firebaseServices";
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
@@ -6,6 +8,40 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 function NewProduct(props) {
+
+const [newProduct, setNewProduct] = useState({
+    name: '',
+    price: 0,
+    stock: 0,
+    productionTime: 0,
+    status: 'Disponible',
+  });
+
+  const handleAddProduct = async () => {
+      try {
+         console.log(newProduct);
+          
+          return
+      await firebaseServices.addProduct(newProduct);
+      setNewProduct({ name: '', price: 0, stock: 0, productionTime: 0, status: 'Disponible' });
+      setIsAddProductDialogOpen(false);
+      toast.success('Producto agregado exitosamente');
+    } catch (error) {
+      console.error("Error adding product: ", error);
+      toast.error("Error al agregar el producto");
+    }
+      };
+    
+    useEffect(() => {
+    
+
+        console.log('props.isAddProductDialogOpen', props.isAddProductDialogOpen);
+
+  
+    });
+
+
+
     return (
         <Dialog open={props.isAddProductDialogOpen} onOpenChange={props.setIsAddProductDialogOpen}>
             <DialogContent>
@@ -15,6 +51,7 @@ function NewProduct(props) {
                 <form
                     onSubmit={e => {
                         e.preventDefault();
+                        handleAddProduct()
                         props.handleAddProduct();
                     }}
                 >

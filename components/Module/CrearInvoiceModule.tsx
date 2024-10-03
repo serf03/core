@@ -1,5 +1,7 @@
 import { Plus, X } from 'lucide-react';
-import React from 'react';
+import React, { useState } from 'react';
+import { toast } from 'react-hot-toast';
+import * as firebaseServices from "../../lib/firebaseServices";
 import { Attachment, Client, GarmentType, Invoice, InvoiceItem, Product } from '../../lib/types';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -26,6 +28,9 @@ interface CrearFacturaModuleProps {
 }
 
 function CrearInvoiceModule(props: CrearFacturaModuleProps) {
+    const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false);
+    const [newClient, setNewClient] = useState<Omit<Client, 'id'>>({ name: '', email: '', phone: '', cedula: '' });
+
     const handleAddAttachment = (itemIndex: number) => {
         const newItems = [...props.newInvoice.items];
         newItems[itemIndex].attachments.push({ id: Date.now().toString(), name: '', price: 0 });
@@ -46,11 +51,10 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
     ) => {
         const newItems = [...props.newInvoice.items];
 
-        // Verifica si el índice del item y el índice del attachment son válidos
         if (newItems[itemIndex] && newItems[itemIndex].attachments[attachmentIndex]) {
             newItems[itemIndex].attachments[attachmentIndex] = {
                 ...newItems[itemIndex].attachments[attachmentIndex],
-                [field]: value, // Usa la propiedad de campo para actualizar el valor
+                [field]: value,
             };
         }
 
@@ -58,282 +62,364 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
     };
 
 
+    const handleCreateNewClient = async () => {
+        try {
+            await firebaseServices.addClient(newClient)
+            setNewClient({ name: '', email: '', phone: '', cedula: '' })
+            setIsNewClientDialogOpen(false);
+            toast.success('Cliente agregado exitosamente')
+        } catch (error) {
+            console.error("Error adding client: ", error)
+            toast.error("Error al agregar el cliente")
+        }
+    }
+
     return (
-        <Dialog open={props.isCreateInvoiceDialogOpen} onOpenChange={props.setIsCreateInvoiceDialogOpen}>
-            <DialogContent className="max-w-7xl">
-                <DialogHeader>
-                    <DialogTitle>Crear Nueva Factura</DialogTitle>
-                </DialogHeader>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        props.handleCreateInvoice();
-                    }}
-                >
-                    <div className="grid gap-4 py-4">
-                        {/* Cliente Filter */}
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="clientFilter" className="text-right">
-                                Buscar Cliente
-                            </Label>
-                            <Input
-                                id="clientFilter"
-                                value={props.clientFilter}
-                                onChange={(e) => props.setClientFilter(e.target.value)}
-                                className="col-span-2"
-                                placeholder="Buscar por cédula o teléfono"
-                            />
-                            <Select
-                                value={props.clientFilterType}
-                                onValueChange={(value: 'cedula' | 'phone') => props.setClientFilterType(value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="cedula">Cédula</SelectItem>
-                                    <SelectItem value="phone">Teléfono</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
+        <>
+            <Dialog open={props.isCreateInvoiceDialogOpen} onOpenChange={props.setIsCreateInvoiceDialogOpen}>
+                <DialogContent className="max-w-7xl">
+                    <DialogHeader>
+                        <DialogTitle>Crear Nueva Factura</DialogTitle>
+                    </DialogHeader>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            props.handleCreateInvoice();
+                        }}
+                    >
+                        <div className="grid gap-4 py-4">
+                            {/* Cliente Filter */}
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="clientFilter" className="text-right">
+                                    Buscar Cliente
+                                </Label>
+                                <Input
+                                    id="clientFilter"
+                                    value={props.clientFilter}
+                                    onChange={(e) => props.setClientFilter(e.target.value)}
+                                    className="col-span-2"
+                                    placeholder="Buscar por cédula o teléfono"
+                                />
+                                <Select
+                                    value={props.clientFilterType}
+                                    onValueChange={(value: 'cedula' | 'phone') => props.setClientFilterType(value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="cedula">Cédula</SelectItem>
+                                        <SelectItem value="phone">Teléfono</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                        {/* Cliente Select */}
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="client" className="text-right">
-                                Cliente
-                            </Label>
-                            <Select
-                                value={props.newInvoice.clientId}
-                                onValueChange={(value) =>
-                                    props.setNewInvoice({
-                                        ...props.newInvoice,
-                                        clientId: value,
-                                    })
-                                }
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Seleccione un cliente" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {props.filterClients().map((client) => (
-                                        <SelectItem key={client.id} value={client.id}>
-                                            {client.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                            {/* Cliente Select */}
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="client" className="text-right">
+                                    Cliente
+                                </Label>
+                                <Select
+                                    value={props.newInvoice.clientId}
+                                    onValueChange={(value) =>
+                                        props.setNewInvoice({
+                                            ...props.newInvoice,
+                                            clientId: value,
+                                        })
+                                    }
+                                >
+                                    <SelectTrigger className="col-span-2">
+                                        <SelectValue placeholder="Seleccione un cliente" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {props.filterClients().map((client) => (
+                                            <SelectItem key={client.id} value={client.id}>
+                                                {client.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Button variant="outline" type="button" onClick={() => setIsNewClientDialogOpen(true)}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                </Button>
+                            </div>
 
-                        {/* Producto Select */}
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="product" className="text-right">
-                                Producto
-                            </Label>
-                            <Select
-                                onValueChange={(value) => {
-                                    const productId = value;
-                                    props.setNewInvoice({
-                                        ...props.newInvoice,
-                                        items: [
-                                            ...props.newInvoice.items,
-                                            { productId, garmentTypeId: '', quantity: 1, price: 0, attachments: [] },
-                                        ],
-                                    });
-                                }}
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Seleccione un producto" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {props.products.map((product) => (
-                                        <SelectItem key={product.id} value={product.id}>
-                                            {product.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                            {/* Producto Select */}
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="product" className="text-right">
+                                    Producto
+                                </Label>
+                                <Select
+                                    onValueChange={(value) => {
+                                        const productId = value;
+                                        props.setNewInvoice({
+                                            ...props.newInvoice,
+                                            items: [
+                                                ...props.newInvoice.items,
+                                                { productId, garmentTypeId: '', quantity: 1, price: 0, attachments: [] },
+                                            ],
+                                        });
+                                    }}
+                                >
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Seleccione un producto" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {props.products.map((product) => (
+                                            <SelectItem key={product.id} value={product.id}>
+                                                {product.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                        {/* Invoice Items Table */}
-                        <div className="col-span-4">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Producto</TableHead>
-                                        <TableHead>Tipo de Prenda</TableHead>
-                                        <TableHead>Cantidad</TableHead>
-                                        <TableHead>Precio</TableHead>
-                                        <TableHead>Attachments</TableHead>
-                                        <TableHead>Subtotal</TableHead>
-                                        <TableHead>Acción</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {props.newInvoice.items.map((item, index) => {
-                                        const product = props.products.find((p) => p.id === item.productId);
-                                        return (
-                                            <TableRow key={index}>
-                                                <TableCell>{product?.name}</TableCell>
-                                                <TableCell>
-                                                    <Select
-                                                        value={item.garmentTypeId}
-                                                        onValueChange={(value) => {
-                                                            const garmentTypeId = value;
-                                                            const newItems = [...props.newInvoice.items];
-                                                            newItems[index].garmentTypeId = garmentTypeId;
-                                                            newItems[index].price = props.calculatePrice(
-                                                                item.productId,
-                                                                garmentTypeId
-                                                            );
-                                                            props.setNewInvoice({
-                                                                ...props.newInvoice,
-                                                                items: newItems,
-                                                                total: newItems.reduce(
-                                                                    (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
-                                                                    0
-                                                                ),
-                                                            });
-                                                        }}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Seleccione tipo" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {props.garmentTypes.map((type) => (
-                                                                <SelectItem key={type.id} value={type.id}>
-                                                                    {type.name}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Input
-                                                        type="number"
-                                                        value={item.quantity}
-                                                        onChange={(e) => {
-                                                            const newQuantity = parseInt(e.target.value);
-                                                            const newItems = [...props.newInvoice.items];
-                                                            newItems[index].quantity = newQuantity;
-                                                            props.setNewInvoice({
-                                                                ...props.newInvoice,
-                                                                items: newItems,
-                                                                total: newItems.reduce(
-                                                                    (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
-                                                                    0
-                                                                ),
-                                                            });
-                                                        }}
-                                                        min={1}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>${item.price}</TableCell>
-                                                <TableCell>
-                                                    {item.attachments.map((attachment, attIndex) => (
-                                                        <div key={attachment.id} className="flex items-center space-x-2 mb-2">
-                                                            <Input
-                                                                placeholder="Nombre"
-                                                                value={attachment.name}
-                                                                onChange={(e) => handleAttachmentChange(index, attIndex, 'name', e.target.value)}
-                                                                className="w-1/2"
-                                                            />
-                                                            <Input
-                                                                type="number"
-                                                                placeholder="Precio"
-                                                                value={attachment.price}
-                                                                onChange={(e) => handleAttachmentChange(index, attIndex, 'price', parseFloat(e.target.value))}
-                                                                className="w-1/4"
-                                                            />
-                                                            <Button
-                                                                variant="destructive"
-                                                                size="sm"
-                                                                onClick={() => handleRemoveAttachment(index, attIndex)}
-                                                            >
-                                                                <X className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    ))}
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleAddAttachment(index)}
-                                                    >
-                                                        <Plus className="h-4 w-4 mr-2" />
-                                                        Agregar Attachment
-                                                    </Button>
-                                                </TableCell>
-                                                <TableCell>
-                                                    ${item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0)}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Button
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        onClick={() => {
-                                                            const newItems = props.newInvoice.items.filter(
-                                                                (_, i) => i !== index
-                                                            );
-                                                            props.setNewInvoice({
-                                                                ...props.newInvoice,
-                                                                items: newItems,
-                                                                total: newItems.reduce(
-                                                                    (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
-                                                                    0
-                                                                ),
-                                                            });
-                                                        }}
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </div>
+                            {/* Invoice Items Table */}
+                            <div className="col-span-4">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Producto</TableHead>
+                                            <TableHead>Tipo de Prenda</TableHead>
+                                            <TableHead>Cantidad</TableHead>
+                                            <TableHead>Precio</TableHead>
+                                            <TableHead>Attachments</TableHead>
+                                            <TableHead>Subtotal</TableHead>
+                                            <TableHead>Acción</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {props.newInvoice.items.map((item, index) => {
+                                            const product = props.products.find((p) => p.id === item.productId);
+                                            return (
+                                                <TableRow key={index}>
+                                                    <TableCell>{product?.name}</TableCell>
+                                                    <TableCell>
+                                                        <Select
+                                                            value={item.garmentTypeId}
+                                                            onValueChange={(value) => {
+                                                                const garmentTypeId = value;
+                                                                const newItems = [...props.newInvoice.items];
+                                                                newItems[index].garmentTypeId = garmentTypeId;
+                                                                newItems[index].price = props.calculatePrice(
+                                                                    item.productId,
+                                                                    garmentTypeId
+                                                                );
+                                                                props.setNewInvoice({
+                                                                    ...props.newInvoice,
+                                                                    items: newItems,
+                                                                    total: newItems.reduce(
+                                                                        (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
+                                                                        0
+                                                                    ),
+                                                                });
+                                                            }}
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Seleccione tipo" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {props.garmentTypes.map((type) => (
+                                                                    <SelectItem key={type.id} value={type.id}>
+                                                                        {type.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.quantity}
+                                                            onChange={(e) => {
+                                                                const newQuantity = parseInt(e.target.value);
+                                                                const newItems = [...props.newInvoice.items];
+                                                                newItems[index].quantity = newQuantity;
+                                                                props.setNewInvoice({
+                                                                    ...props.newInvoice,
+                                                                    items: newItems,
+                                                                    total: newItems.reduce(
+                                                                        (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
+                                                                        0
+                                                                    ),
+                                                                });
+                                                            }}
+                                                            min={1}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>${item.price}</TableCell>
+                                                    <TableCell>
+                                                        {item.attachments.map((attachment, attIndex) => (
+                                                            <div key={attachment.id} className="flex items-center space-x-2 mb-2">
+                                                                <Input
+                                                                    placeholder="Nombre"
+                                                                    value={attachment.name}
+                                                                    onChange={(e) => handleAttachmentChange(index, attIndex, 'name', e.target.value)}
+                                                                    className="w-1/2"
+                                                                />
+                                                                <Input
+                                                                    type="number"
+                                                                    placeholder="Precio"
+                                                                    value={attachment.price}
+                                                                    onChange={(e) => handleAttachmentChange(index, attIndex, 'price', parseFloat(e.target.value))}
+                                                                    className="w-1/4"
+                                                                />
+                                                                <Button
+                                                                    variant="destructive"
+                                                                    size="sm"
+                                                                    onClick={() => handleRemoveAttachment(index, attIndex)}
+                                                                >
+                                                                    <X className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        ))}
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled
+                                                            onClick={() => handleAddAttachment(index)}
+                                                        >
+                                                            <Plus className="h-4 w-4 mr-2" />
+                                                            Agregar Attachment
+                                                        </Button>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        ${item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0)}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                const newItems = props.newInvoice.items.filter(
+                                                                    (_, i) => i !== index
+                                                                );
+                                                                props.setNewInvoice({
+                                                                    ...props.newInvoice,
+                                                                    items: newItems,
+                                                                    total: newItems.reduce(
+                                                                        (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
+                                                                        0
+                                                                    ),
+                                                                });
+                                                            }}
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
 
-                        {/* Pickup Date */}
-                        <div className="grid grid-cols-8 items-center gap-4">
-                            <label className="text-sm leading-none text-right font-bold peer-disabled:cursor-not-allowed peer-disabled:opacity-70 col-span-2">
-                                Entrega:
-                            </label>
-                            <div className="font-bold col-span-6">
-                                <span className="block p-2 border rounded-lg bg-gray-100">
-                                    {props.calculatePickupDate(props.newInvoice.items)}
-                                </span>
+                            {/* Pickup Date */}
+                            <div className="grid grid-cols-8 items-center gap-4">
+                                <label className="text-sm leading-none text-right font-bold peer-disabled:cursor-not-allowed peer-disabled:opacity-70 col-span-2">
+                                    Entrega:
+                                </label>
+                                <div className="font-bold col-span-6">
+                                    <span className="block p-2 border rounded-lg bg-gray-100">
+                                        {props.calculatePickupDate(props.newInvoice.items)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Color Picker */}
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="color" className="text-right">
+                                    Color
+                                </Label>
+                                <Input
+                                    id="color"
+                                    type="color"
+                                    value={props.newInvoice.color}
+                                    onChange={(e) =>
+                                        props.setNewInvoice({ ...props.newInvoice, color: e.target.value })
+                                    }
+                                    className="col-span-3"
+                                />
+                            </div>
+
+                            {/* Total */}
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right col-span-3 font-bold">Total:</Label>
+                                <div className="font-bold">${props.newInvoice.total}</div>
                             </div>
                         </div>
 
-                        {/* Color Picker */}
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="color" className="text-right">
-                                Color
-                            </Label>
-                            <Input
-                                id="color"
-                                type="color"
-                                value={props.newInvoice.color}
-                                onChange={(e) =>
-                                    props.setNewInvoice({ ...props.newInvoice, color: e.target.value })
-                                }
-                                className="col-span-3"
-                            />
-                        </div>
+                        <DialogFooter>
+                            <Button type="submit">Crear Factura</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
-                        {/* Total */}
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label className="text-right col-span-3 font-bold">Total:</Label>
-                            <div className="font-bold">${props.newInvoice.total}</div>
+            {/* New Client Dialog */}
+            <Dialog open={isNewClientDialogOpen} onOpenChange={setIsNewClientDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Crear Nuevo Cliente</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        handleCreateNewClient();
+                    }}>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="name" className="text-right">
+                                    Nombre
+                                </Label>
+                                <Input
+                                    id="name"
+                                    value={newClient.name}
+                                    onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="email" className="text-right">
+                                    Email
+                                </Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={newClient.email}
+                                    onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="phone" className="text-right">
+                                    Teléfono
+                                </Label>
+                                <Input
+                                    id="phone"
+                                    value={newClient.phone}
+                                    onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="cedula" className="text-right">
+                                    Cédula
+                                </Label>
+                                <Input
+                                    id="cedula"
+                                    value={newClient.cedula}
+                                    onChange={(e) => setNewClient({ ...newClient, cedula: e.target.value })}
+                                    className="col-span-3"
+                                />
+                            </div>
                         </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button type="submit">Crear</Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                        <DialogFooter>
+                            <Button type="submit">Crear Cliente</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 

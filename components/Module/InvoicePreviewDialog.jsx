@@ -23,7 +23,7 @@ function InvoicePreviewDialog({
         <Dialog open={isInvoicePreviewOpen} onOpenChange={setIsInvoicePreviewOpen}>
             <DialogContent className="max-w-4xl">
                 <DialogHeader>
-                    <DialogTitle>Vista Previa de Factura</DialogTitle>
+                    <DialogTitle>Vista Previa de Factur</DialogTitle>
                 </DialogHeader>
                 {selectedInvoice && <InvoicePreview invoice={selectedInvoice} />}
                 <DialogFooter>

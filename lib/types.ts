@@ -63,11 +63,10 @@ interface ProductionRecord {
     type: 'Lavado' | 'Planchado' | 'Empaquetado'
 }
 
-interface Printer {
-    id: string
+interface Printers {
     name: string
     isDefault: boolean
 }
 
-export type { Attachment, Client, GarmentType, Invoice, InvoiceItem, Printer, Product, ProductionRecord, User, UserRole }
+export type { Attachment, Client, GarmentType, Invoice, InvoiceItem, Printers, Product, ProductionRecord, User, UserRole }
 

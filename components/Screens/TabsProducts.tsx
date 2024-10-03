@@ -28,7 +28,7 @@ interface TabsProductsProps {
 }
 function TabsProducts(props: TabsProductsProps) {
     return (
-        <TabsContent value="productsc" className="space-y-4">
+        <TabsContent value="products" className="space-y-4">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Productos</h2>
                 <Button onClick={() => props.setIsAddProductDialogOpen(true)}>

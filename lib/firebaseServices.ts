@@ -1,6 +1,6 @@
-import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
-import { Client, GarmentType, Invoice, Printer, Product, ProductionRecord, User } from './types';
+import { Client, GarmentType, Invoice, Product, ProductionRecord, User } from './types';
 
 // Usuarios
 export const addUser = async (user: Omit<User, 'id'>) => {
@@ -27,6 +27,13 @@ export const subscribeToUsers = (callback: (users: User[]) => void) => {
         const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
         callback(users);
     });
+};
+
+// Obtener Usuario por ID
+export const getUserById = async (id: string) => {
+    const docRef = doc(db, 'users', id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as User) : null;
 };
 
 // Clientes
@@ -56,6 +63,13 @@ export const subscribeToClients = (callback: (clients: Client[]) => void) => {
     });
 };
 
+// Obtener Cliente por ID
+export const getClientById = async (id: string) => {
+    const docRef = doc(db, 'clients', id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as Client) : null;
+};
+
 // Productos
 export const addProduct = async (product: Omit<Product, 'id'>) => {
     const docRef = await addDoc(collection(db, 'products'), product);
@@ -81,6 +95,13 @@ export const subscribeToProducts = (callback: (products: Product[]) => void) => 
         const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
         callback(products);
     });
+};
+
+// Obtener Producto por ID
+export const getProductById = async (id: string) => {
+    const docRef = doc(db, 'products', id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as Product) : null;
 };
 
 // Tipos de Prendas
@@ -110,6 +131,13 @@ export const subscribeToGarmentTypes = (callback: (garmentTypes: GarmentType[]) 
     });
 };
 
+// Obtener Tipo de Prenda por ID
+export const getGarmentTypeById = async (id: string) => {
+    const docRef = doc(db, 'garmentTypes', id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as GarmentType) : null;
+};
+
 // Facturas
 export const addInvoice = async (invoice: Omit<Invoice, 'id'>) => {
     const docRef = await addDoc(collection(db, 'invoices'), invoice);
@@ -135,6 +163,13 @@ export const subscribeToInvoices = (callback: (invoices: Invoice[]) => void) => 
         const invoices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Invoice));
         callback(invoices);
     });
+};
+
+// Obtener Factura por ID
+export const getInvoiceById = async (id: string) => {
+    const docRef = doc(db, 'invoices', id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as Invoice) : null;
 };
 
 // Registros de Producción
@@ -164,29 +199,15 @@ export const subscribeToProductionRecords = (callback: (records: ProductionRecor
     });
 };
 
-// Impresoras
-export const addPrinter = async (printer: Omit<Printer, 'id'>) => {
-    const docRef = await addDoc(collection(db, 'printers'), printer);
-    return { id: docRef.id, ...printer };
+// Obtener Registro de Producción por ID
+export const getProductionRecordById = async (id: string) => {
+    const docRef = doc(db, 'productionRecords', id);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as ProductionRecord) : null;
 };
 
-export const updatePrinter = async (printer: Printer) => {
-    await updateDoc(doc(db, 'printers', printer.id), { ...printer });
-    return printer;
-};
 
 export const deletePrinter = async (id: string) => {
     await deleteDoc(doc(db, 'printers', id));
 };
 
-export const getPrinters = async () => {
-    const querySnapshot = await getDocs(collection(db, 'printers'));
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Printer));
-};
-
-export const subscribeToPrinters = (callback: (printers: Printer[]) => void) => {
-    return onSnapshot(collection(db, 'printers'), (snapshot) => {
-        const printers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Printer));
-        callback(printers);
-    });
-};
