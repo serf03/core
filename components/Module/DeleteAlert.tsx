@@ -1,23 +1,9 @@
 // Importación de componentes de UI
+import { Client, Product } from '@/lib/types';
 import { toast } from 'react-hot-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 
-interface Client {
-    id: string
-    name: string
-    email: string
-    phone: string
-    cedula: string
-}
 
-interface Product {
-    id: string
-    name: string
-    price: number
-    stock: number
-    productionTime: number
-    status: 'Disponible' | 'En Uso' | 'En Mantenimiento' | 'Agotado'
-}
 
 // Define las propiedades del componente
 interface DeleteAlertDialogProps {

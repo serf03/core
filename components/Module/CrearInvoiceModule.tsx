@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import * as firebaseServices from "../../lib/firebaseServices";
 import { Attachment, Client, GarmentType, Invoice, InvoiceItem, Product } from '../../lib/types';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Input } from '../ui/input';
@@ -28,12 +29,15 @@ interface CrearFacturaModuleProps {
 }
 
 function CrearInvoiceModule(props: CrearFacturaModuleProps) {
+
+    const { user } = useAuth();
+
     const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false);
-    const [newClient, setNewClient] = useState<Omit<Client, 'id'>>({ name: '', email: '', phone: '', cedula: '' });
+    const [newClient, setNewClient] = useState<Client>({ name: '', email: '', phone: '', cedula: '', idAdministrador: `${user?.uid}`, direccion: "" });
 
     const handleAddAttachment = (itemIndex: number) => {
         const newItems = [...props.newInvoice.items];
-        newItems[itemIndex].attachments.push({ id: Date.now().toString(), name: '', price: 0 });
+        newItems[itemIndex].attachments.push({ id: Date.now().toString(), name: '', price: 0, idAdministrador: `${user?.uid}` });
         props.setNewInvoice({ ...props.newInvoice, items: newItems });
     };
 
@@ -65,7 +69,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
     const handleCreateNewClient = async () => {
         try {
             await firebaseServices.addClient(newClient)
-            setNewClient({ name: '', email: '', phone: '', cedula: '' })
+            setNewClient({ name: '', email: '', phone: '', cedula: '', direccion: "", idAdministrador: `${user?.uid}` })
             setIsNewClientDialogOpen(false);
             toast.success('Cliente agregado exitosamente')
         } catch (error) {
@@ -133,7 +137,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {props.filterClients().map((client) => (
-                                            <SelectItem key={client.id} value={client.id}>
+                                            <SelectItem key={client.id} value={client.id || ""}>
                                                 {client.name}
                                             </SelectItem>
                                         ))}
@@ -156,7 +160,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                             ...props.newInvoice,
                                             items: [
                                                 ...props.newInvoice.items,
-                                                { productId, garmentTypeId: '', quantity: 1, price: 0, attachments: [] },
+                                                { productId, garmentTypeId: '', quantity: 1, price: 0, attachments: [], idAdministrador: `${user?.uid}` },
                                             ],
                                         });
                                     }}
@@ -166,7 +170,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {props.products.map((product) => (
-                                            <SelectItem key={product.id} value={product.id}>
+                                            <SelectItem key={product.id} value={product.id || ""}>
                                                 {product.name}
                                             </SelectItem>
                                         ))}
@@ -220,7 +224,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                                             </SelectTrigger>
                                                             <SelectContent>
                                                                 {props.garmentTypes.map((type) => (
-                                                                    <SelectItem key={type.id} value={type.id}>
+                                                                    <SelectItem key={type.id} value={type.id || ""}>
                                                                         {type.name}
                                                                     </SelectItem>
                                                                 ))}

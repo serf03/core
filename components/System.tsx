@@ -28,6 +28,7 @@ import { Label } from "./ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 import { Tabs, TabsContent } from "./ui/tabs"
 
+
 // Lazy imports for tab components
 const TabsClients = lazy(() => import("./Screens/TabsClients"))
 const TabsDashboard = lazy(() => import("./Screens/TabsDashboard"))
@@ -46,12 +47,13 @@ import InvoiceReceiptDialog from "./Module/InvoiceReceiptDialog"
 import NewProduct from "./Module/NewProductDialog"
 import StateFacturaDialog from "./Module/StateInvoiceDialog"
 //Module Alert 
+import { Client, GarmentType, Invoice, Product, ProductionRecord, User } from "../lib/types"
 import CancelAlert from "./Module/CancelAlert"
 import DeleteAlertDialog from "./Module/DeleteAlert"
-
-import { Client, GarmentType, Invoice, Product, ProductionRecord, User } from "../lib/types"
+import { useAuth } from "./context/AuthContext"
 
 export function System() {
+  const { user } = useAuth();
   // Estados
   const [activeTab, setActiveTab] = useState("dashboard")
   const [users, setUsers] = useState<User[]>([])
@@ -64,15 +66,15 @@ export function System() {
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false)
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false)
   const [isCreateInvoiceDialogOpen, setIsCreateInvoiceDialogOpen] = useState(false)
-  const [newClient, setNewClient] = useState<Omit<Client, 'id'>>({ name: '', email: '', phone: '', cedula: '' })
-  const [newProduct, setNewProduct] = useState<Omit<Product, 'id'>>({ name: '', price: 0, stock: 0, productionTime: 0, status: 'Disponible' })
+  const [newClient, setNewClient] = useState<Omit<Client, 'id'>>({ name: '', email: '', phone: '', cedula: '', direccion: '', active: true, idAdministrador: `${user?.uid}` })
   const [newInvoice, setNewInvoice] = useState<Omit<Invoice, 'id' | 'date'>>({
     clientId: '',
     items: [],
     total: 0,
     status: 'Pendiente',
     pickupDate: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
-    color: '#FFD700'
+    color: '#FFD700',
+    idAdministrador: `${user?.uid}`
   })
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [isInvoicePreviewOpen, setIsInvoicePreviewOpen] = useState(false)
@@ -93,7 +95,7 @@ export function System() {
 
   const [isAddGarmentTypeDialogOpen, setIsAddGarmentTypeDialogOpen] = useState(false)
   const [isEditGarmentTypeDialogOpen, setIsEditGarmentTypeDialogOpen] = useState(false)
-  const [newGarmentType, setNewGarmentType] = useState<Omit<GarmentType, 'id'>>({ name: '', basePrice: 0, description: '', category: '' })
+  const [newGarmentType, setNewGarmentType] = useState<Omit<GarmentType, 'id'>>({ name: '', basePrice: 0, description: '', category: '', idAdministrador: `${user?.uid}` })
   const [editingGarmentType, setEditingGarmentType] = useState<GarmentType | null>(null)
 
 
@@ -101,8 +103,6 @@ export function System() {
 
     const unsubscribeInvoices = firebaseServices.subscribeToInvoices(setInvoices)
 
-
-    // Limpiar suscripciones
     return () => {
       unsubscribeInvoices()
     }
@@ -170,7 +170,7 @@ export function System() {
   const handleAddGarmentType = async () => {
     try {
       await firebaseServices.addGarmentType(newGarmentType)
-      setNewGarmentType({ name: '', basePrice: 0, description: '', category: '' })
+      setNewGarmentType({ name: '', basePrice: 0, description: '', category: '', idAdministrador: `${user?.uid}` })
       setIsAddGarmentTypeDialogOpen(false)
       toast.success('Tipo de prenda agregado exitosamente')
     } catch (error) {
@@ -193,9 +193,10 @@ export function System() {
     }
   }
 
-  const handleDeleteGarmentType = async (id: string) => {
+  const handleDeleteGarmentType = async (id?: string) => {
     try {
-      await firebaseServices.deleteGarmentType(id)
+      if (!id) toast.error("Error al eliminar el tipo de prenda");
+      await firebaseServices.deleteGarmentType(id || "")
       toast.success('Tipo de prenda eliminado exitosamente')
     } catch (error) {
       console.error("Error deleting garment type: ", error)
@@ -207,7 +208,7 @@ export function System() {
   const handleAddClient = async () => {
     try {
       await firebaseServices.addClient(newClient)
-      setNewClient({ name: '', email: '', phone: '', cedula: '' })
+      setNewClient({ name: '', email: '', phone: '', cedula: '', direccion: '', active: true, idAdministrador: `${user?.uid}` })
       setIsAddClientDialogOpen(false)
       toast.success('Cliente agregado exitosamente')
     } catch (error) {
@@ -241,17 +242,6 @@ export function System() {
   }
 
   // Funciones de manejo de productos
-  const handleAddProduct = async () => {
-    try {
-      await firebaseServices.addProduct(newProduct)
-      setNewProduct({ name: '', price: 0, stock: 0, productionTime: 0, status: 'Disponible' })
-      setIsAddProductDialogOpen(false)
-      toast.success('Producto agregado exitosamente')
-    } catch (error) {
-      console.error("Error adding product: ", error)
-      toast.error("Error al agregar el producto")
-    }
-  }
 
   const handleUpdateProduct = async () => {
     if (editingProduct) {
@@ -413,7 +403,7 @@ export function System() {
       total: 0,
       status: 'Pendiente',
       pickupDate: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
-      color: '#FFD700',
+      color: '#FFD700', idAdministrador: `${user?.uid} `
     });
     setIsCreateInvoiceDialogOpen(false);
   };
@@ -487,10 +477,10 @@ export function System() {
         initial={{ x: -250 }}
         animate={{ x: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full md:w-64 bg-white shadow-md"
+        className="w-full md:w-64 bg-white shadow-md space-y-4"
       >
         <div className="p-4">
-          <h1 className="text-2xl font-bold text-blue-600">QuickClear</h1>
+          <h1 className="text-2xl font-bold text-blue-600">Qc</h1>
         </div>
         <nav className="mt-6">
           {[
@@ -498,7 +488,9 @@ export function System() {
             { name: "Facturación", icon: <FileText size={20} />, id: "billing" },
             { name: "Usuarios", icon: <Users size={20} />, id: "users" },
             { name: "Clientes", icon: <Users size={20} />, id: "clients" },
-            { name: "Productos", icon: <Package size={20} />, id: "products" },
+            {
+              name: "Servicio", icon: <Package size={20} />, id: "products"
+            },
             { name: "Tipos de Prendas", icon: <Shirt size={20} />, id: "garmentTypes" },
             { name: "Reportes", icon: <BarChart size={20} />, id: "reports" },
           ].map((item) => (
@@ -560,7 +552,7 @@ export function System() {
                 <Suspense fallback={<div>Cargando...</div>}>
                   {activeTab === "dashboard" && (
                     <TabsContent value="dashboard">
-                      <TabsDashboard products={products.filter(p => p.stock < 10)} invoices={invoices} dailyProduction={dailyProduction} />
+                      <TabsDashboard products={products} invoices={invoices} dailyProduction={dailyProduction} />
                     </TabsContent>
                   )}
                   {activeTab === "billing" && (
@@ -661,7 +653,7 @@ export function System() {
                                         <Edit className="h-4 w-4 mr-2" />
                                         Editar
                                       </Button>
-                                      <Button variant="destructive" onClick={() => handleDeleteGarmentType(garmentType.id)}>
+                                      <Button variant="destructive" onClick={() => handleDeleteGarmentType(garmentType?.id)}>
                                         <Trash className="h-4 w-4 mr-2" />
                                         Eliminar
                                       </Button>
@@ -787,9 +779,6 @@ export function System() {
         <NewProduct
           isAddProductDialogOpen={isAddProductDialogOpen}
           setIsAddProductDialogOpen={setIsAddProductDialogOpen}
-          newProduct={newProduct}
-          setNewProduct={setNewProduct}
-          handleAddProduct={handleAddProduct}
         />
       )}
 

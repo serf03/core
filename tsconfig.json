@@ -37,7 +37,7 @@
     "components/Module/EditProductDialog.jsx",
     "components/Module/InvoicePreviewDialog.jsx",
     "components/Module/StateInvoiceDialog.jsx",
-    "components/Module/NewProductDialog.jsx",
+    "components/Module/NewProductDialog.tsx",
     "components/Module/MainContent.jsx",
     "components/Screens/TabsUsuario.jsx",
     "components/Screens/TabsReport.jsx",

@@ -12,12 +12,14 @@ interface NewPrendaProps {
         basePrice: number;
         description: string;
         category: string;
+        idAdministrador: string;
     };
     setNewGarmentType: (newGarmentType: {
         name: string;
         basePrice: number;
         description: string;
         category: string;
+        idAdministrador: string;
     }) => void;
     handleAddGarmentType: () => void;
 }

@@ -1,147 +1,127 @@
-"use client"
+"use client";
 
-import { ArrowRightIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons'
-import { AnimatePresence, motion } from 'framer-motion'
-import React, { useState } from 'react'
-import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
-import { Button } from "../ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card"
-import { Input } from "../ui/input"
-import { Label } from "../ui/label"
+import { useToast } from "@/components/ui/use-toast";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
-
-export default function LoginScreen() {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const [step, setStep] = useState(1)
-    const [error, setError] = useState('')
+export function LoginScreen() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const { login } = useAuth();
+    const { toast } = useToast();
 
     const handleEmailSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
+        e.preventDefault();
         if (email) {
-            setStep(2)
-        } else {
-            setError('Please enter your email')
+            setShowPassword(true);
         }
-    }
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault()
-        // Aquí iría la lógica de autenticación real
-        console.log('Login attempt with:', email, password)
-        // Simulando un error de login para demostración
-        setError('Invalid email or password')
-    }
-
-    const slideVariants = {
-        enter: (direction: number) => {
-            return {
-                x: direction > 0 ? 1000 : -1000,
-                opacity: 0
-            }
-        },
-        center: {
-            zIndex: 1,
-            x: 0,
-            opacity: 1
-        },
-        exit: (direction: number) => {
-            return {
-                zIndex: 0,
-                x: direction < 0 ? 1000 : -1000,
-                opacity: 0
-            }
+        e.preventDefault();
+        if (!email.trim() || !password.trim()) {
+            toast({
+                title: "Invalid Input",
+                description: "Email and password cannot be empty.",
+                variant: "destructive",
+            });
+            return;
         }
-    }
+        try {
+            await login(email, password);
+            toast({
+                title: "Login successful",
+                description: "Redirecting to dashboard...",
+            });
+        } catch {
+            toast({
+                title: "Login failed",
+                description: "Please check your credentials and try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const inputVariants = {
+        hidden: { opacity: 0, y: 50 },
+        visible: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -50 },
+    };
 
     return (
-        <div className="relative flex items-center justify-center min-h-screen overflow-hidden">
-            <div className="relative z-10">
-                <Card className="w-[350px] bg-white/80 backdrop-blur-md shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-2xl font-bold text-gray-800">Welcome Back</CardTitle>
-                        <CardDescription className="text-gray-600">Sign in to your account</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <AnimatePresence mode="wait" initial={false}>
-                            {step === 1 && (
-                                <motion.form
-                                    key="email"
-                                    variants={slideVariants}
-                                    initial="enter"
-                                    animate="center"
-                                    exit="exit"
-                                    transition={{
-                                        x: { type: "spring", stiffness: 300, damping: 30 },
-                                        opacity: { duration: 0.2 }
-                                    }}
-                                    onSubmit={handleEmailSubmit}
-                                >
-                                    <div className="grid gap-4">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="email" className="text-gray-700">Email</Label>
-                                            <Input
-                                                id="email"
-                                                placeholder="name@example.com"
-                                                type="email"
-                                                autoCapitalize="none"
-                                                autoComplete="email"
-                                                autoCorrect="off"
-                                                value={email}
-                                                onChange={(e) => setEmail(e.target.value)}
-                                                className="bg-white/50 border-gray-300"
-                                            />
-                                        </div>
-                                        <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white">
-                                            Continue
-                                            <ArrowRightIcon className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </motion.form>
-                            )}
-                            {step === 2 && (
-                                <motion.form
-                                    key="password"
-                                    variants={slideVariants}
-                                    initial="enter"
-                                    animate="center"
-                                    exit="exit"
-                                    transition={{
-                                        x: { type: "spring", stiffness: 300, damping: 30 },
-                                        opacity: { duration: 0.2 }
-                                    }}
-                                    onSubmit={handleLogin}
-                                >
-                                    <div className="grid gap-4">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="password" className="text-gray-700">Password</Label>
-                                            <Input
-                                                id="password"
-                                                type="password"
-                                                autoCapitalize="none"
-                                                autoComplete="current-password"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                className="bg-white/50 border-gray-300"
-                                            />
-                                        </div>
-                                        <Button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white">Sign In</Button>
-                                    </div>
-                                </motion.form>
-                            )}
-                        </AnimatePresence>
-                    </CardContent>
-                    <CardFooter>
-                        {error && (
-                            <Alert variant="destructive" className="bg-red-100 border-red-400 text-red-700">
-                                <ExclamationTriangleIcon className="h-4 w-4" />
-                                <AlertTitle>Error</AlertTitle>
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
+        <div className="min-h-screen bg-gradient-to-br flex items-center justify-center p-4">
+            <div className="w-full max-w-md">
+                <h1 className="text-4xl font-bold text-center mb-8 text-gray-800">Welcome Qc</h1>
+                <form onSubmit={showPassword ? handleLogin : handleEmailSubmit} className="space-y-6">
+                    <AnimatePresence mode="wait">
+                        {!showPassword && (
+                            <motion.div
+                                key="email"
+                                variants={inputVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                transition={{ duration: 0.3 }}
+                            >
+                                <Input
+                                    type="email"
+                                    placeholder="Enter your email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    className="w-full bg-white bg-opacity-50 backdrop-blur-md border-none rounded-lg py-3 px-4 text-lg focus:ring-2 focus:ring-purple-400 transition duration-300"
+                                />
+                            </motion.div>
                         )}
-                    </CardFooter>
-                </Card>
+                        {showPassword && (
+                            <motion.div
+                                key="password"
+                                variants={inputVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                transition={{ duration: 0.3 }}
+                            >
+                                <Input
+                                    type="password"
+                                    placeholder="Enter your password"
+                                    value={password}  // Revisar que el valor sea el adecuado
+                                    onChange={(e) => setPassword(e.target.value)}  // Asegúrate que el onChange actualiza el estado
+                                    required
+                                    className="w-full bg-white bg-opacity-50 backdrop-blur-md border-none rounded-lg py-3 px-4 text-lg focus:ring-2 focus:ring-purple-400 transition duration-300"
+                                />
+
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+                        <Button
+                            type="submit"
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg py-3 px-4 text-lg font-semibold transition duration-300 flex items-center justify-center"
+                        >
+                            {showPassword ? "Login" : "Next"}
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
+                    </motion.div>
+                </form>
+                {showPassword && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+                        <Button
+                            variant="ghost"
+                            onClick={() => setShowPassword(false)}
+                            className="mt-4 w-full text-gray-600 hover:text-gray-800 transition duration-300 flex items-center justify-center"
+                        >
+                            <ArrowLeft className="mr-2 h-5 w-5" />
+                            Back to Email
+                        </Button>
+                    </motion.div>
+                )}
             </div>
         </div>
-    )
+    );
 }

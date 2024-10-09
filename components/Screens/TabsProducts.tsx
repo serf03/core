@@ -1,4 +1,5 @@
 // Importar componentes de UI
+import { Product } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
@@ -7,18 +8,11 @@ import { TabsContent } from '../ui/tabs';
 
 // Importar iconos
 import { Edit, Plus, Trash } from 'lucide-react';
-interface Product {
-    id: string;
-    name: string;
-    price: number;
-    stock: number;
-    productionTime: number;
-    status: 'Disponible' | 'En Uso' | 'En Mantenimiento' | 'Agotado';
-}
+
 
 // Definición de las propiedades del componente
 interface TabsProductsProps {
-    products: Product[];
+    products: Product[]
     setIsAddProductDialogOpen: (isOpen: boolean) => void;
     searchTerm: string;
     setSearchTerm: (term: string) => void;
@@ -53,7 +47,6 @@ function TabsProducts(props: TabsProductsProps) {
                                 <TableHead>ID</TableHead>
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Precio</TableHead>
-                                <TableHead>Stock</TableHead>
                                 <TableHead>Tiempo de Producción (min)</TableHead>
                                 <TableHead>Estado</TableHead>
                                 <TableHead>Acciones</TableHead>
@@ -71,7 +64,6 @@ function TabsProducts(props: TabsProductsProps) {
                                         <TableCell>{product.id}</TableCell>
                                         <TableCell>{product.name}</TableCell>
                                         <TableCell>${product.price}</TableCell>
-                                        <TableCell>{product.stock}</TableCell>
                                         <TableCell>{product.productionTime}</TableCell>
                                         <TableCell>{product.status}</TableCell>
                                         <TableCell>
@@ -87,7 +79,7 @@ function TabsProducts(props: TabsProductsProps) {
                                                 </Button>
                                                 <Button
                                                     variant="destructive"
-                                                    onClick={() => props.handleDeleteProduct(product.id)}
+                                                    onClick={() => props.handleDeleteProduct(product.id || "")}
                                                 >
                                                     <Trash className="h-4 w-4 mr-2" />
                                                     Eliminar
