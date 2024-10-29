@@ -4,13 +4,12 @@ const PrintInvoiceKiosk = ({ invoice, onClose }) => {
     useEffect(() => {
         // Crear una nueva ventana para la impresión
         const printWindow = window.open('', '', 'width=800,height=600');
-
         if (printWindow) {
             // Generar el contenido HTML para la factura
             const content = `
                 <html>
                     <head>
-                        <title>Imprimir Factura</title>
+                        <title>Imprimir Facura</title>
                         <style>
                             body { font-family: monospace; font-size: 12px; margin: 0; padding: 0; }
                             .receipt { width: 300px; margin: 0 auto; }

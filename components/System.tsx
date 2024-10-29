@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "./ui/button"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
+import { Dialog, DialogContent } from "./ui/dialog"
 
 import { addDays, addMinutes, format, setHours, setMinutes } from 'date-fns'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -10,7 +10,9 @@ import {
   Bell,
   Edit,
   FileText,
+  HelpCircle,
   LayoutDashboard,
+  LogOut,
   Package,
   Plus,
   Search,
@@ -23,11 +25,15 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { toast, Toaster } from 'react-hot-toast'
 import * as firebaseServices from "../lib/firebaseServices"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
 import { Input } from "./ui/input"
-import { Label } from "./ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 import { Tabs, TabsContent } from "./ui/tabs"
-
 
 // Lazy imports for tab components
 const TabsClients = lazy(() => import("./Screens/TabsClients"))
@@ -40,8 +46,10 @@ const TabsUsuario = lazy(() => import("./Screens/TabsUsuario"))
 
 //Module content
 import AddClientsDialog from "./Module/AddClientsDialog"
+import AlertsCerrarSesion from "./Module/AlertsCerrarSesionModule"
 import CrearFacturaModule from "./Module/CrearInvoiceModule"
 import EditClientsDialog from "./Module/EditClientsDialog"
+import EditPrendaModule from "./Module/EditPrendaModule"
 import EditProductDialog from "./Module/EditProductDialog"
 import InvoiceReceiptDialog from "./Module/InvoiceReceiptDialog"
 import NewProduct from "./Module/NewProductDialog"
@@ -52,9 +60,15 @@ import CancelAlert from "./Module/CancelAlert"
 import DeleteAlertDialog from "./Module/DeleteAlert"
 import { useAuth } from "./context/AuthContext"
 
+import { getLastInvoiceNumber } from "../lib/firebaseServices"
+import AddUserDialog from "./Module/AddUserDialog"
+
+
+
 export function System() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   // Estados
+  const [newUser, setNewUser] = useState<User>({ name: '', email: '', clave: '', idAdministrador: user?.uid || '' })
   const [activeTab, setActiveTab] = useState("dashboard")
   const [users, setUsers] = useState<User[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -74,7 +88,10 @@ export function System() {
     status: 'Pendiente',
     pickupDate: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
     color: '#FFD700',
-    idAdministrador: `${user?.uid}`
+    idAdministrador: `${user?.uid}`,
+    paymentType: "",
+    amountPaid: 0,
+    invoiceNumber: ""
   })
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [isInvoicePreviewOpen, setIsInvoicePreviewOpen] = useState(false)
@@ -92,7 +109,8 @@ export function System() {
   const [isChangeInvoiceStatusDialogOpen, setIsChangeInvoiceStatusDialogOpen] = useState(false)
   const [invoiceToChangeStatus, setInvoiceToChangeStatus] = useState<Invoice | null>(null)
   const [isVali, setIsvali] = useState<boolean>(false);
-
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState<boolean>(false);
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false)
   const [isAddGarmentTypeDialogOpen, setIsAddGarmentTypeDialogOpen] = useState(false)
   const [isEditGarmentTypeDialogOpen, setIsEditGarmentTypeDialogOpen] = useState(false)
   const [newGarmentType, setNewGarmentType] = useState<Omit<GarmentType, 'id'>>({ name: '', basePrice: 0, description: '', category: '', idAdministrador: `${user?.uid}` })
@@ -102,7 +120,7 @@ export function System() {
   useEffect(() => {
 
     const unsubscribeInvoices = firebaseServices.subscribeToInvoices(setInvoices)
-
+    console.log(user)
     return () => {
       unsubscribeInvoices()
     }
@@ -141,6 +159,16 @@ export function System() {
 
     calculateDailyProduction()
   }, [productionRecords])
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      console.log('Sesión cerrada exitosamente')
+      // Aquí puedes redirigir al usuario a la página de inicio de sesión
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error)
+    }
+  }
 
   // Memoización de datos filtrados
   const filteredClients = useMemo(() => {
@@ -203,7 +231,22 @@ export function System() {
       toast.error("Error al eliminar el tipo de prenda")
     }
   }
-
+  const handleAddUser = async () => {
+    try {
+      await firebaseServices.addUser(newUser)
+      setNewUser({
+        name: '',
+        email: '',
+        clave: '',
+        idAdministrador: user?.uid || ''
+      })
+      setIsAddUserDialogOpen(false)
+      toast.success('Usuario agregado exitosamente')
+    } catch (error) {
+      console.error("Error adding user: ", error)
+      toast.error("Error al agregar el usuario")
+    }
+  }
   // Funciones de manejo de clientes
   const handleAddClient = async () => {
     try {
@@ -267,71 +310,84 @@ export function System() {
     }
   }
 
-  // Función para calcular la fecha de entrega
+  // Función para calcular la fecha de ent
   const calculatePickupDate = (items: Invoice['items']): string => {
-    const now = new Date()
-    let totalProductionTime = 0
+    const now = new Date();
+    let totalProductionTime = 0;
 
     // Calcular el tiempo total de producción para los nuevos items
     items.forEach(item => {
-      const product = products.find(p => p.id === item.productId)
+      const product = products.find(p => p.id === item.productId);
       if (product) {
-        totalProductionTime += product.productionTime * item.quantity
+        totalProductionTime += product.productionTime * item.quantity;
       }
-    })
+    });
 
     // Obtener las facturas activas (En Proceso)
-    const activeInvoices = invoices.filter(inv => inv.status === 'En Proceso')
+    const activeInvoices = invoices.filter(inv => inv.status === 'En Proceso');
 
     // Calcular el tiempo de producción restante de las facturas activas
-    let remainingProductionTime = 0
+    let remainingProductionTime = 0;
     activeInvoices.forEach(invoice => {
       invoice.items.forEach(item => {
-        const product = products.find(p => p.id === item.productId)
+        const product = products.find(p => p.id === item.productId);
         if (product) {
-          remainingProductionTime += product.productionTime * item.quantity
+          remainingProductionTime += product.productionTime * item.quantity;
         }
-      })
-    })
+      });
+    });
 
     // Sumar el tiempo de producción de las facturas activas y los nuevos items
-    const totalTime = remainingProductionTime + totalProductionTime
+    const totalTime = remainingProductionTime + totalProductionTime;
 
     // Calcular la fecha de entrega
-    let pickupDate = now
-    let remainingMinutes = totalTime
+    let pickupDate = now;
+    let remainingMinutes = totalTime;
 
     while (remainingMinutes > 0) {
-      pickupDate = addMinutes(pickupDate, 1)
+      pickupDate = addMinutes(pickupDate, 1);
 
       // Verificar si estamos dentro del horario laboral (8:00 AM - 5:00 PM)
       if (pickupDate.getHours() >= 8 && pickupDate.getHours() < 17) {
-        remainingMinutes--
+        remainingMinutes--;
       }
 
       // Si llegamos al final del día, saltar al siguiente día laboral
       if (pickupDate.getHours() >= 17) {
-        pickupDate = setHours(setMinutes(addDays(pickupDate, 1), 0), 8)
+        pickupDate = setHours(setMinutes(addDays(pickupDate, 1), 0), 8);
       }
 
       // Si es fin de semana, saltar al lunes
       if (pickupDate.getDay() === 0 || pickupDate.getDay() === 6) {
-        pickupDate = setHours(setMinutes(addDays(pickupDate, pickupDate.getDay() === 0 ? 1 : 2), 0), 8)
+        pickupDate = setHours(setMinutes(addDays(pickupDate, pickupDate.getDay() === 0 ? 1 : 2), 0), 8);
       }
     }
 
-    return format(pickupDate, 'yyyy-MM-dd HH:mm')
-  }
+    return format(pickupDate, 'yyyy-MM-dd h:mm a'); // Cambia a formato 12 horas AM/PM
+  };
 
-  const handleCreateInvoice = async () => {
+  const handleCreateInvoice = async (tpago: string, mpago?: number) => {
     try {
       const date = new Date().toISOString().split('T')[0];
       const pickupDate = calculatePickupDate(newInvoice.items);
+
+      // Obtener el último número de factura
+      const lastInvoiceNumber = await getLastInvoiceNumber();
+
+      // Crear el nuevo número de factura
+      const newInvoiceNumber = lastInvoiceNumber + 1;
+
+      // Formatear el número de factura
+      const formattedInvoiceNumber = `FC${String(newInvoiceNumber).padStart(6, '0')}`;
+
       const newInvoiceWithPickupDate: Omit<Invoice, "id"> = {
         ...newInvoice,
+        invoiceNumber: formattedInvoiceNumber,
         pickupDate,
         date,
         status: 'En Proceso',
+        paymentType: tpago,
+        amountPaid: mpago
       };
 
       const idRegex = /^[a-zA-Z0-9]{5,}$/; // Alfanumérico y mínimo de 5 caracteres
@@ -342,10 +398,10 @@ export function System() {
         return; // Detiene si el cliente no es válido
       }
 
-      // Validar clientId
+      // Validar items
       if (newInvoiceWithPickupDate.items.length == 0) {
         toast.error("El Producto 😑?");
-        return; // Detiene si el cliente no es válido
+        return; // Detiene si no hay productos
       }
 
       // Validar todos los items
@@ -353,7 +409,6 @@ export function System() {
 
       console.log(allItemsValid);
       console.log(newInvoiceWithPickupDate);
-
 
       if (!allItemsValid) return; // Si algún item no es válido, detener todo
 
@@ -363,13 +418,12 @@ export function System() {
       // Restablecer factura después de la creación exitosa
       resetInvoice();
 
-      toast.success('Factura creada exitosamente');
+      toast.success(`Factura ${formattedInvoiceNumber} creada exitosamente`);
     } catch (error) {
       console.error("Error creating invoice: ", error);
       toast.error("Error al crear la factura");
     }
   };
-
 
 
   // Tipos explícitos para los parámetros
@@ -403,7 +457,10 @@ export function System() {
       total: 0,
       status: 'Pendiente',
       pickupDate: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
-      color: '#FFD700', idAdministrador: `${user?.uid} `
+      color: '#FFD700', idAdministrador: `${user?.uid} `,
+      paymentType: "",
+      amountPaid: 0,
+      invoiceNumber: "",
     });
     setIsCreateInvoiceDialogOpen(false);
   };
@@ -514,27 +571,53 @@ export function System() {
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="bg-white shadow-sm p-4 flex justify-between items-center"
+          className="bg-white dark:bg-gray-800 shadow-sm p-4"
         >
-          <div className="flex items-center">
-            <Input
-              type="search"
-              placeholder="Buscar..."
-              className="w-64 mr-2"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Button variant="outline" size="icon">
-              <Search className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-6 w-6" />
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Settings className="h-6 w-6" />
-            </Button>
+          <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center">
+            <form className="flex items-center flex-grow mr-4 mb-2 sm:mb-0">
+              <Input
+                type="search"
+                placeholder="Buscar..."
+                className="w-full sm:w-64 mr-2"
+                disabled
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Button disabled type="submit" variant="outline" size="icon" aria-label="Search">
+                <Search className="h-4 w-4" />
+              </Button>
+            </form>
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
+                <Bell className="h-6 w-6" />
+                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label="Settings">
+                    <Settings className="h-6 w-6" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem disabled>
+                    <span>@{user?.email?.replace("@gmail.com", "").replace("@hotmail", "")}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => console.log('Ayuda')}>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    <span>Ayuda</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    if (isLogoutDialogOpen) {
+                      setIsLogoutDialogOpen(false)
+                    }
+                    setIsLogoutDialogOpen(true)
+                  }}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar sesión</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </motion.header>
 
@@ -691,70 +774,17 @@ export function System() {
       )}
 
       {isEditGarmentTypeDialogOpen && (
-        <Dialog open={isEditGarmentTypeDialogOpen} onOpenChange={setIsEditGarmentTypeDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Editar Tipo de Prenda</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={(e) => {
-              e.preventDefault()
-              handleUpdateGarmentType()
-            }}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="editName" className="text-right">
-                    Nombre
-                  </Label>
-                  <Input
-                    id="editName"
-                    value={editingGarmentType?.name || ''}
-                    onChange={(e) => setEditingGarmentType(prev => prev ? { ...prev, name: e.target.value } : null)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="editBasePrice" className="text-right">
-                    Precio Base
-                  </Label>
-                  <Input
-                    id="editBasePrice"
-                    type="number"
-                    value={editingGarmentType?.basePrice || 0}
-                    onChange={(e) => setEditingGarmentType(prev => prev ? { ...prev, basePrice: parseFloat(e.target.value) } : null)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="editDescription" className="text-right">
-                    Descripción
-                  </Label>
-                  <Input
-                    id="editDescription"
-                    value={editingGarmentType?.description || ''}
-                    onChange={(e) => setEditingGarmentType(prev => prev ? { ...prev, description: e.target.value } : null)}
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="editCategory" className="text-right">
-                    Categoría
-                  </Label>
-                  <Input
-                    id="editCategory"
-                    value={editingGarmentType?.category || ''}
-                    onChange={(e) => setEditingGarmentType(prev => prev ? { ...prev, category: e.target.value } : null)}
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Actualizar Tipo de Prenda</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <EditPrendaModule isEditGarmentTypeDialogOpen={isEditGarmentTypeDialogOpen} setIsEditGarmentTypeDialogOpen={setIsEditGarmentTypeDialogOpen} editingGarmentType={editingGarmentType} setEditingGarmentType={setEditingGarmentType} handleUpdateGarmentType={handleUpdateGarmentType}></EditPrendaModule>
       )}
-
+      {isAddClientDialogOpen && (
+        <AddUserDialog
+          isAddUserDialogOpen={setIsAddUserDialogOpen}  // Error: aquí debe ser booleano
+          setIsAddClientDialogOpen={setIsAddClientDialogOpen}
+          newClient={newClient}
+          setNewClient={setNewClient}
+          handleAddUser={handleAddUser}
+        />
+      )}
       {isAddClientDialogOpen && (
         <AddClientsDialog
           isAddClientDialogOpen={isAddClientDialogOpen}
@@ -846,7 +876,7 @@ export function System() {
           handleChangeInvoiceStatus={handleChangeInvoiceStatus}
         />
       )}
-
+      <AlertsCerrarSesion isLogoutDialogOpen={isLogoutDialogOpen} handleLogout={handleLogout}></AlertsCerrarSesion>
       <Toaster />
     </div>
   )

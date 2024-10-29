@@ -42,7 +42,7 @@
     "components/Screens/TabsUsuario.jsx",
     "components/Screens/TabsReport.jsx",
     "components/Screens/TabsProduction.tsx",
-    "components/Screens/TabsFacturacion.jsx",
+    "components/Screens/TabsFacturacion.tsx",
     "components/Screens/TabsDashboard.jsx",
     "components/Screens/TabsClients.jsx",
     "components/Module/InvoiceReceiptDialog.jsx"

@@ -23,18 +23,25 @@ export default function InvoiceReceiptDialog({ invoice }) {
             }
         };
         fetchInvoice();
+ 
     }, [invoice.id]);
 
     if (!Invoice) {
         return <div>Cargando factura...</div>; // Mostrar mensaje de carga mientras se obtienen los datos
     }
-
+    
+    console.log(Invoice); // Para depurar y ver qué datos se están obteniendo
+    const formattedPickupDate = new Date(invoice.pickupDate).toLocaleString("es-ES", {
+        hour: "numeric",
+        minute: "numeric",
+        hour12: true
+    });
     return (
         <>
             <div className="bg-white p-6 font-mono text-sm">
                 <div className="text-center mb-4">
                     <h2 className="text-xl font-bold">Factura</h2>
-                    <p className="text-xs">Factura {invoice.id}</p>
+                    <p className="text-xs">Factura {invoice.invoiceNumber}</p>
                 </div>
                 <div className="border-t border-b border-gray-300 py-2 mb-2">
                     <div className="flex justify-between">
@@ -49,23 +56,21 @@ export default function InvoiceReceiptDialog({ invoice }) {
                     </div>
                     <div className="flex justify-between">
                         <span>Fecha de retiro:</span>
-                        <span>{invoice.pickupDate}</span>
+                        <span>{formattedPickupDate}</span>
                     </div>
                 </div>
 
                 {/* Productos */}
-                {invoice.items.map((item, index) => {
-                    const product = Invoice.products?.find(product => product.id === item.productId);
-                    const garmentType = Invoice.garmentTypes?.find(garment => garment.name === item.garmentTypeId); // Ahora busca por nombre
-
+                {Invoice.items.map((item, index) => {
+                    console.log(item);
                     return (
                         <div key={index} className="border-b border-gray-300 py-2 mb-2">
                             <div className="flex justify-between font-bold">
-                                <span>{product?.name || "Producto no disponible"}</span>
-                                <span>${item.price}</span>
+                                <span>{item.name}</span>
+                                <span>${item.price * item.quantity}</span>
                             </div>
                             <div className="text-xs ml-4">
-                                <p>Tipo de Prenda: {garmentType?.name || "Tipo no disponible"}</p>
+                                <p>Tipo de Prenda: {item.garmentType}</p>
                                 <p>Cantidad: {item.quantity}</p>
                                 <p>Precio: ${item.price}</p>
                             </div>
@@ -81,7 +86,7 @@ export default function InvoiceReceiptDialog({ invoice }) {
                 </div>
 
                 <div className="text-center text-xs">
-                    <p>Cliente: {Invoice?.client?.name || "Cliente no disponible"}</p>
+                    <p>Cliente: {Invoice?.client || "Cliente no disponible"}</p>
 
                     {/* Código QR centrado */}
                     <div className="flex justify-center my-4">

@@ -1,68 +1,178 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
-import { Client, GarmentType, Invoice, Product, ProductionRecord, User } from './types';
+import { Client, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, Product, ProductionRecord, User } from './types';
 
 function AdminId() {
 
     const uid = localStorage.getItem("uid")// Asegúrate de que el uid está disponible 
     return uid;
 }
+const getInvoiceWithDetails = async (invoiceId: string): Promise<InvoiceDetail> => {
+    try {
+        // Obtener la factura desde Firestore
+        const invoiceRef = doc(db, 'invoices', invoiceId);
+        const invoiceSnap = await getDoc(invoiceRef);
 
-// Obtener Factura y sus relaciones
-const getInvoiceWithDetails = async (invoiceId: string) => {
-    const invoiceRef = doc(db, 'invoices', invoiceId);
-    const invoiceSnap = await getDoc(invoiceRef);
+        if (!invoiceSnap.exists() || invoiceSnap.data().idAdministrador !== AdminId()) {
+            throw new Error(`No se encontró la factura con ID: ${invoiceId} o no tienes acceso.`);
+        }
 
-    if (!invoiceSnap.exists() || invoiceSnap.data().idAdministrador !== AdminId()) {
-        throw new Error(`No se encontró la factura con ID: ${invoiceId} o no tienes acceso.`);
+        const invoiceData = invoiceSnap.data() as Invoice;
+
+        // Obtener el cliente relacionado con la factura
+        const clientId = invoiceData.clientId;
+        const clientRef = doc(db, 'clients', clientId);
+        const clientSnap = await getDoc(clientRef);
+
+        const clientName = clientSnap.exists() ? clientSnap.data()?.name : null;
+
+        if (!Array.isArray(invoiceData.items) || invoiceData.items.length === 0) {
+            console.warn(`La factura con ID: ${invoiceId} no tiene ítems.`);
+            return constructInvoiceDetail(invoiceData, [], clientName, invoiceData.total);
+        }
+
+        // Procesar cada item en la factura
+        const itemsDetails = await Promise.all(
+            invoiceData.items.map(async (item, index) => {
+                const processedItem = await processInvoiceItems(item, index);
+                if (!processedItem) {
+                    console.warn(`El ítem en la posición ${index} no se procesó correctamente.`);
+                }
+                return processedItem;
+            })
+        );
+
+        console.log(itemsDetails)
+        // Filtrar los elementos válidos en caso de que `processInvoiceItem` devuelva null
+        const validItemsDetails: InvoiceItemDetails[] = itemsDetails.filter(item => item !== null) as InvoiceItemDetails[];
+
+        // Calcular el total de los ítems válidos
+        const calculatedTotal = validItemsDetails.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+        const total = invoiceData.total || calculatedTotal;
+
+        // Retornar la información estructurada según la interfaz InvoiceDetail
+        return constructInvoiceDetail(invoiceData, validItemsDetails, clientName, total);
+    } catch (error) {
+        console.error('Error obteniendo los detalles de la factura:', error);
+        throw new Error(`Error al obtener los detalles de la factura con ID: ${invoiceId}.`);
     }
+};
 
-    const invoiceData = invoiceSnap.data() as Invoice;
-
-    // Crear el objeto de la factura con el ID
-    const invoice = { ...invoiceData, id: invoiceId };
-
-    // Obtener el cliente asociado a la factura
-    const clientRef = doc(db, 'clients', invoice.clientId);
-    const clientSnap = await getDoc(clientRef);
-
-    if (!clientSnap.exists() || clientSnap.data().idAdministrador !== AdminId()) {
-        throw new Error(`No se encontró el cliente con ID: ${invoice.clientId} o no tienes acceso.`);
-    }
-
-    const client = clientSnap.data() as Client;
-
-    // Obtener los detalles de los productos y tipos de prendas en los items de la factura
-    const products: Product[] = [];
-    const garmentTypes: GarmentType[] = [];
-
-    for (const item of invoice.items) {
+// Ejemplo de función para procesar un item de la factura (asegúrate de personalizarla según tus datos)
+const processInvoiceItems = async (item: InvoiceItem, index: number): Promise<InvoiceItemDetails | null> => {
+    try {
+        // Obtener los detalles del producto y tipo de prenda relacionados
         const productRef = doc(db, 'products', item.productId);
-        const productSnap = await getDoc(productRef);
-
-        if (productSnap.exists() && productSnap.data().idAdministrador === AdminId()) {
-            products.push(productSnap.data() as Product);
-        } else {
-            console.warn(`No se encontró el producto con ID: ${item.productId} o no tienes acceso.`);
-        }
-
         const garmentTypeRef = doc(db, 'garmentTypes', item.garmentTypeId);
-        const garmentTypeSnap = await getDoc(garmentTypeRef);
 
-        if (garmentTypeSnap.exists() && garmentTypeSnap.data().idAdministrador === AdminId()) {
-            garmentTypes.push(garmentTypeSnap.data() as GarmentType);
-        } else {
-            console.warn(`No se encontró el tipo de prenda con ID: ${item.garmentTypeId} o no tienes acceso.`);
+        const [productSnap, garmentTypeSnap] = await Promise.all([getDoc(productRef), getDoc(garmentTypeRef)]);
+
+        if (!productSnap.exists() || !garmentTypeSnap.exists()) {
+            console.warn(`Producto o tipo de prenda no encontrado para el ítem en la posición ${index}.`);
+            return null;
         }
-    }
 
+        const productData = productSnap.data() as Product;
+        const garmentTypeData = garmentTypeSnap.data() as GarmentType;
+
+        return {
+            product: productData.name,
+            garmentType: garmentTypeData.name,
+            quantity: item.quantity,
+            price: item.price,
+            attachments: item.attachments
+        };
+    } catch (error) {
+        console.error(`Error al procesar el ítem en la posición ${index}:`, error);
+        return null;
+    }
+};
+
+// Función para construir el objeto de detalle de la factura
+const constructInvoiceDetail = (invoiceData: Invoice, items: InvoiceItemDetails[], clientName: string | null, total: number): InvoiceDetail => {
     return {
-        invoice,
-        client,
-        products,
-        garmentTypes
+        client: clientName || "Cliente no encontrado",
+        items,
+        total,
+        status: invoiceData.status,
+        date: invoiceData.date,
+        pickupDate: invoiceData.pickupDate,
+        color: invoiceData.color,
+        paymentType: invoiceData.paymentType,
+        amountPaid: invoiceData.amountPaid,
+        invoiceNumber: invoiceData.invoiceNumber
     };
 };
+
+
+const getLastInvoiceNumber = async (): Promise<number> => {
+    const invoicesRef = collection(db, 'invoices');
+    const invoicesQuery = query(invoicesRef, orderBy('invoiceNumber', 'desc'), limit(1));
+    const lastInvoiceSnapshot = await getDocs(invoicesQuery);
+
+    if (lastInvoiceSnapshot.empty) {
+        return 0; // Si no hay facturas, empezamos desde 0
+    }
+
+    const lastInvoiceData = lastInvoiceSnapshot.docs[0].data();
+    const lastNumber = parseInt(lastInvoiceData.invoiceNumber.slice(2), 10); // Aquí asumo que la numeración empieza con un prefijo de 2 caracteres
+    return lastNumber;
+};
+
+
+
+
+// Función para procesar cada ítem de la factura
+// const processInvoiceItem = async (item: InvoiceItem, index: number): Promise<InvoiceItemDetails | null> => {
+//     if (!item.productId) {
+//         console.warn(`El ítem ${index + 1} no tiene un productId válido.`);
+//         return null;
+//     }
+
+//     console.log(`Procesando ítem con productId: ${item.productId}`);
+
+//     // Obtener el producto
+//     const productSnap = await getDoc(doc(db, 'products', item.productId));
+
+//     if (!productSnap.exists() || productSnap.data().idAdministrador !== AdminId()) {
+//         console.warn(`No se encontró el producto con ID: ${item.productId} o no tienes acceso.`);
+//         return null;
+//     }
+
+//     const productData = productSnap.data() as Product;
+//     const { name: productName, garmentTypeId } = productData;
+
+//     if (!garmentTypeId) {
+//         console.warn(`El producto con ID: ${item.productId} no tiene un garmentTypeId válido.`);
+//         return null;
+//     }
+
+//     // Obtener el tipo de prenda
+//     const garmentTypeSnap = await getDoc(doc(db, 'garmentTypes', garmentTypeId));
+
+//     if (!garmentTypeSnap.exists() || garmentTypeSnap.data().idAdministrador !== AdminId()) {
+//         console.warn(`No se encontró el tipo de prenda con ID: ${garmentTypeId} o no tienes acceso.`);
+//         return null;
+//     }
+
+//     const garmentTypeData = garmentTypeSnap.data() as GarmentType;
+//     const garmentTypeName = garmentTypeData.name;
+
+//     console.log(`Garment Type: ${garmentTypeName}`);
+
+//     // Retornar el detalle del ítem
+//     return {
+//         product: productName,
+//         garmentType: garmentTypeName,
+//         quantity: item.quantity,
+//         price: item.price,
+//         attachments: item.attachments ?? []
+//     };
+// };
+
+// Función para construir el objeto de detalle de la factura
+
+
 
 // Suscribirse a facturas
 const subscribeToInvoices = (callback: (invoices: Invoice[]) => void) => {
@@ -302,5 +412,5 @@ const updateInvoice = async (invoice: Invoice) => {
     return invoice;
 };
 
-export { addClient, addGarmentType, addInvoice, addProduct, addProductionRecord, addUser, deleteClient, deleteGarmentType, deleteProduct, deleteProductionRecord, deleteUser, getClients, getGarmentTypes, getInvoiceWithDetails, getProductionRecords, getProducts, getUsers, subscribeToClients, subscribeToGarmentTypes, subscribeToInvoices, subscribeToProductionRecords, subscribeToProducts, subscribeToUsers, updateClient, updateGarmentType, updateInvoice, updateProduct, updateProductionRecord, updateUser };
+export { addClient, addGarmentType, addInvoice, addProduct, addProductionRecord, addUser, deleteClient, deleteGarmentType, deleteProduct, deleteProductionRecord, deleteUser, getClients, getGarmentTypes, getInvoiceWithDetails, getLastInvoiceNumber, getProductionRecords, getProducts, getUsers, subscribeToClients, subscribeToGarmentTypes, subscribeToInvoices, subscribeToProductionRecords, subscribeToProducts, subscribeToUsers, updateClient, updateGarmentType, updateInvoice, updateProduct, updateProductionRecord, updateUser };
 

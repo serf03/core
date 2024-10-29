@@ -24,19 +24,19 @@ function TabsProducts(props: TabsProductsProps) {
     return (
         <TabsContent value="products" className="space-y-4">
             <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Productos</h2>
+                <h2 className="text-2xl font-bold">Servicios</h2>
                 <Button onClick={() => props.setIsAddProductDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" /> Agregar Producto
+                    <Plus className="mr-2 h-4 w-4" /> Agregar
                 </Button>
             </div>
             <Card>
                 <CardHeader>
-                    <CardTitle>Lista de Productos</CardTitle>
+                    <CardTitle>Lista</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="mb-4">
                         <Input
-                            placeholder="Buscar producto..."
+                            placeholder="Buscar..."
                             value={props.searchTerm}
                             onChange={e => props.setSearchTerm(e.target.value)}
                         />

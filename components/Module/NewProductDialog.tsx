@@ -63,7 +63,7 @@ export default function NewProduct({ isAddProductDialogOpen, setIsAddProductDial
     <Dialog open={isAddProductDialogOpen} onOpenChange={setIsAddProductDialogOpen}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">Agregar Nuevo Producto</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-center">Nuevo</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -123,7 +123,7 @@ export default function NewProduct({ isAddProductDialogOpen, setIsAddProductDial
             <Button type="button" variant="outline" onClick={() => setIsAddProductDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit">Agregar Producto</Button>
+            <Button type="submit">Agregar</Button>
           </DialogFooter>
         </form>
       </DialogContent>

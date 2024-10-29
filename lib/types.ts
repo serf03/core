@@ -3,10 +3,11 @@
 type UserRole = 'Administrador' | 'Facturador' | 'Operador' | 'Cliente'
 
 interface User {
-    id: string
+    id?: string
     name: string
     email: string
-    role: UserRole
+    clave: string
+    role: 'Administrador' | 'Facturador' | 'Operador' | 'Cliente',
     idAdministrador: string;
 }
 
@@ -27,7 +28,8 @@ interface Product {
     price: number
     productionTime: number
     status: 'Disponible' | 'En Uso' | 'En Mantenimiento' | 'Agotado'
-    idAdministrador: string
+    idAdministrador: string,
+    garmentTypeId?: string
 }
 
 interface GarmentType {
@@ -61,9 +63,30 @@ interface Invoice {
     date: string
     pickupDate: string
     color: string
-    idAdministrador: string
+    idAdministrador: string,
+    paymentType: string
+    amountPaid?: number,
+    invoiceNumber: string
 }
-
+interface InvoiceItemDetails {
+    product: string
+    garmentType: string
+    quantity: number
+    price: number
+    attachments: Attachment[]
+}
+interface InvoiceDetail {
+    client: string
+    items: InvoiceItemDetails[]
+    total: number
+    status: 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada'
+    date: string
+    pickupDate: string
+    color: string
+    paymentType: string
+    amountPaid?: number,
+    invoiceNumber: string
+}
 interface ProductionRecord {
     id: string
     date: string
@@ -78,5 +101,17 @@ interface Printers {
     idAdministrador: string
 }
 
-export type { Attachment, Client, GarmentType, Invoice, InvoiceItem, Printers, Product, ProductionRecord, User, UserRole }
+interface TabsFacturacionProps {
+    invoices: Invoice[];
+    clients: Client[];
+    searchTerm: string;
+    setSearchTerm: (term: string) => void;
+    setIsCreateInvoiceDialogOpen: (isOpen: boolean) => void;
+    setInvoiceToChangeStatus: (invoice: Invoice) => void;
+    setIsChangeInvoiceStatusDialogOpen: (isOpen: boolean) => void;
+    handlePrintInvoice: (invoice: Invoice) => void;
+    handleCancelInvoice: (invoice: Invoice) => void;
+}
+
+export type { Attachment, Client, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole }
 

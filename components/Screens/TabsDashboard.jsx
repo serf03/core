@@ -44,7 +44,7 @@ function TabsDashboard(props) {
                     </Card>
                 </motion.div>
 
-                <motion.div
+                {/* <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
@@ -63,7 +63,7 @@ function TabsDashboard(props) {
                             </p>
                         </CardContent>
                     </Card>
-                </motion.div>
+                </motion.div> */}
 
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
