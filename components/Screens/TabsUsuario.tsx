@@ -1,10 +1,11 @@
 
 
 import * as firebaseServices from '@/lib/firebaseServices'
-import { User } from '@/lib/types'
+import { User, UserRole } from '@/lib/types'
 import { Edit, Trash, UserPlus } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { toast } from 'react-hot-toast'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
@@ -13,7 +14,18 @@ import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 import { TabsContent } from '../ui/tabs'
+function getInitials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase();
+}
 
+function getAvatarColor(name: string) {
+  const colors = [
+    'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
+    'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
+  ];
+  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+  return colors[index];
+}
 
 
 interface TabsUsuarioProps {
@@ -25,7 +37,9 @@ interface TabsUsuarioProps {
 export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUsuarioProps) {
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false)
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false)
-  const [newUser, setNewUser] = useState<User | null>(null)
+  const [newUser, setNewUser] = useState<User>({
+    name: '', email: '', clave: '', role: 'Facturador', idAdministrador: ''
+  });
   const [editingUser, setEditingUser] = useState<User | null>(null)
 
   const filteredUsers = users.filter(user =>
@@ -99,7 +113,6 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead>Correo</TableHead>
                 <TableHead>Rol</TableHead>
@@ -109,8 +122,19 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
             <TableBody>
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell>{user.id}</TableCell>
-                  <TableCell>{user.name}</TableCell>
+                  <TableCell>
+
+                    <div className="flex items-center space-x-2">
+                      <Avatar className={`h-10 w-10 ${getAvatarColor(user.name)}`}>
+                        <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.name}`} />
+                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                      </Avatar>
+                      <span>    {user.name}</span>
+                    </div>
+
+
+
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.role}</TableCell>
                   <TableCell>
@@ -167,17 +191,19 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
               <Label htmlFor="role">Rol</Label>
               <Select
                 value={newUser?.role}
-                onValueChange={(value) => setNewUser({ ...newUser, role: value })}
+                onValueChange={(value: UserRole) => setNewUser({ ...newUser, role: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar rol" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="user">Usuario</SelectItem>
-                  <SelectItem value="editor">Editor</SelectItem>
+                  <SelectItem value="Administrador">Administrador</SelectItem>
+                  <SelectItem value="Facturador">Facturador</SelectItem>
+                  <SelectItem value="Operador">Operador</SelectItem>
+                  <SelectItem value="Cliente">Cliente</SelectItem>
                 </SelectContent>
               </Select>
+
             </div>
             <Button type="submit">Agregar Usuario</Button>
           </form>
@@ -218,7 +244,7 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
                 <Label htmlFor="edit-role">Rol</Label>
                 <Select
                   value={editingUser.role}
-                  onValueChange={(value) => setEditingUser({ ...editingUser, role: value })}
+                  onValueChange={(value: UserRole) => setNewUser({ ...newUser, role: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar rol" />

@@ -1,12 +1,60 @@
+//firebaseServices.ts
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, updateDoc } from 'firebase/firestore';
 import { db } from './firebaseConfig';
-import { Client, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, Product, ProductionRecord, User } from './types';
+import { Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, Product, ProductionRecord, User } from './types';
 
 function AdminId() {
 
     const uid = localStorage.getItem("uid")// Asegúrate de que el uid está disponible 
     return uid;
 }
+
+// Add a new expense
+export const addExpense = async (expense: Omit<Expense, 'id' | 'idAdministrador'>) => {
+    const expenseWithAdminId = { ...expense, idAdministrador: AdminId() };
+    const docRef = await addDoc(collection(db, 'expenses'), expenseWithAdminId);
+    return { id: docRef.id, ...expenseWithAdminId };
+};
+
+// Update an existing expense
+export const updateExpense = async (expense: Expense) => {
+    if (!expense.id) {
+        throw new Error("El ID del gasto es indefinido o inválido.");
+    }
+    if (expense.idAdministrador !== AdminId()) {
+        throw new Error("No tienes permiso para actualizar este gasto.");
+    }
+    await updateDoc(doc(db, 'expenses', expense.id), { ...expense });
+    return expense;
+};
+
+// Delete an expense
+export const deleteExpense = async (id: string) => {
+    const expenseSnap = await getDoc(doc(db, 'expenses', id));
+    if (expenseSnap.exists() && expenseSnap.data().idAdministrador === AdminId()) {
+        await deleteDoc(doc(db, 'expenses', id));
+    } else {
+        throw new Error("No tienes permiso para eliminar este gasto.");
+    }
+};
+
+// Get all expenses for the current admin
+export const getExpenses = async () => {
+    const querySnapshot = await getDocs(collection(db, 'expenses'));
+    return querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Expense))
+        .filter(expense => expense.idAdministrador === AdminId());
+};
+
+// Subscribe to expenses changes
+export const subscribeToExpenses = (callback: (expenses: Expense[]) => void) => {
+    return onSnapshot(collection(db, 'expenses'), (snapshot) => {
+        const expenses = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Expense))
+            .filter(expense => expense.idAdministrador === AdminId());
+        callback(expenses);
+    });
+};
 const getInvoiceWithDetails = async (invoiceId: string): Promise<InvoiceDetail> => {
     try {
         // Obtener la factura desde Firestore
@@ -238,9 +286,16 @@ const updateUser = async (user: User) => {
     if (user.idAdministrador !== AdminId()) {
         throw new Error("No tienes permiso para actualizar este usuario.");
     }
+
+    // Verifica que user.id esté definido antes de usarlo
+    if (!user.id) {
+        throw new Error("ID de usuario no definido.");
+    }
+
     await updateDoc(doc(db, 'users', user.id), { ...user });
     return user;
 };
+
 
 const deleteUser = async (id: string) => {
     const userSnap = await getDoc(doc(db, 'users', id));

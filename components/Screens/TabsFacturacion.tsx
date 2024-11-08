@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Grid, List, Plus, Printer, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Invoice, TabsFacturacionProps } from "../../lib/types";
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -9,6 +10,19 @@ import { Input } from '../ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { TabsContent } from '../ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
+
+function getInitials(name: string) {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+}
+
+function getAvatarColor(name: string) {
+    const colors = [
+        'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
+        'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
+    ];
+    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[index];
+}
 
 function TabsFacturacion(props: TabsFacturacionProps) {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -22,7 +36,7 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 gap-2">
-                        <div>Cliente: {client?.name}</div>
+                        <div className='col-span-2 w-full'>Cliente: <strong>{client?.name}</strong> </div>
                         <div>Total: ${invoice.total}</div>
                         <div>Estado:
                             <Badge
@@ -35,12 +49,8 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                 {invoice.status}
                             </Badge>
                         </div>
-                        <div>Fecha: {invoice.date}</div>
-                        <div>Fecha de Retiro: {invoice.pickupDate}</div>
-                        <div>
-                            Color:
-                            <div className="w-6 h-6 rounded-full inline-block ml-2" style={{ backgroundColor: invoice.color }}></div>
-                        </div>
+                        <div className='col-span-2 w-full'>Facturado: {invoice.date}</div>
+                        <div className='col-span-2 w-full'>Retiro: {invoice.pickupDate}</div>
                     </div>
                     <div className="mt-4 flex space-x-2">
                         <Button
@@ -48,7 +58,7 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                 props.setInvoiceToChangeStatus(invoice);
                                 props.setIsChangeInvoiceStatusDialogOpen(true);
                             }}
-                            disabled={invoice.status === 'Entregada'}
+                            disabled={invoice.status === 'Entregada' || invoice.status === 'Cancelada'}
                         >
                             Cambiar Estado
                         </Button>
@@ -162,7 +172,16 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                     <TableRow key={invoice.id}>
                                                         <TableCell>{invoice.invoiceNumber}</TableCell>
                                                         <TableCell>
-                                                            {props.clients.find(c => c.id === invoice.clientId)?.name}
+
+                                                            <div className="flex items-center space-x-2">
+                                                                <Avatar className={`h-10 w-10 ${getAvatarColor(props.clients.find(c => c.id === invoice.clientId)?.name || "")}`}>
+                                                                    <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${props.clients.find(c => c.id === invoice.clientId)?.name || ""}`} />
+                                                                    <AvatarFallback>{getInitials(props.clients.find(c => c.id === invoice.clientId)?.name || "")}</AvatarFallback>
+                                                                </Avatar>
+                                                                <span>{props.clients.find(c => c.id === invoice.clientId)?.name}</span>
+                                                            </div>
+
+
                                                         </TableCell>
                                                         <TableCell>${invoice.total}</TableCell>
                                                         <TableCell>
@@ -192,7 +211,7 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                                         props.setInvoiceToChangeStatus(invoice);
                                                                         props.setIsChangeInvoiceStatusDialogOpen(true);
                                                                     }}
-                                                                    disabled={invoice.status === 'Entregada'}
+                                                                    disabled={invoice.status === 'Entregada' || invoice.status === 'Cancelada'}
                                                                 >
                                                                     Cambiar Estado
                                                                 </Button>

@@ -13,6 +13,7 @@ import {
   HelpCircle,
   LayoutDashboard,
   LogOut,
+  NotebookPen,
   Package,
   Plus,
   Search,
@@ -63,12 +64,25 @@ import { useAuth } from "./context/AuthContext"
 import { getLastInvoiceNumber } from "../lib/firebaseServices"
 import AddUserDialog from "./Module/AddUserDialog"
 
+import TabsExpenses from "./Screens/TabsExpenses"
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+function getInitials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase();
+}
 
+function getAvatarColor(name: string) {
+  const colors = [
+    'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
+    'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
+  ];
+  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+  return colors[index];
+}
 
 export function System() {
   const { user, logout } = useAuth();
   // Estados
-  const [newUser, setNewUser] = useState<User>({ name: '', email: '', clave: '', idAdministrador: user?.uid || '' })
+  const [newUser, setNewUser] = useState<User>({ name: '', email: '', clave: '', role: "Facturador", idAdministrador: user?.uid || '' })
   const [activeTab, setActiveTab] = useState("dashboard")
   const [users, setUsers] = useState<User[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -120,7 +134,7 @@ export function System() {
   useEffect(() => {
 
     const unsubscribeInvoices = firebaseServices.subscribeToInvoices(setInvoices)
-    console.log(user)
+    console.log(isAddUserDialogOpen)
     return () => {
       unsubscribeInvoices()
     }
@@ -238,6 +252,7 @@ export function System() {
         name: '',
         email: '',
         clave: '',
+        role: "Facturador",
         idAdministrador: user?.uid || ''
       })
       setIsAddUserDialogOpen(false)
@@ -549,6 +564,7 @@ export function System() {
               name: "Servicio", icon: <Package size={20} />, id: "products"
             },
             { name: "Tipos de Prendas", icon: <Shirt size={20} />, id: "garmentTypes" },
+            { name: "Gasto", icon: <NotebookPen size={20} />, id: "expenses" },
             { name: "Reportes", icon: <BarChart size={20} />, id: "reports" },
           ].map((item) => (
             <Button
@@ -711,7 +727,6 @@ export function System() {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>ID</TableHead>
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Precio Base</TableHead>
                                 <TableHead>Descripción</TableHead>
@@ -722,8 +737,16 @@ export function System() {
                             <TableBody>
                               {filteredGarmentTypes.map((garmentType) => (
                                 <TableRow key={garmentType.id}>
-                                  <TableCell>{garmentType.id}</TableCell>
-                                  <TableCell>{garmentType.name}</TableCell>
+                                  <TableCell>
+
+                                    <div className="flex items-center space-x-2">
+                                      <Avatar className={`h-10 w-10 ${getAvatarColor(garmentType.name)}`}>
+                                        <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${garmentType.name}`} />
+                                        <AvatarFallback>{getInitials(garmentType.name)}</AvatarFallback>
+                                      </Avatar>
+                                      <span>    {garmentType.name}</span>
+                                    </div>
+                                  </TableCell>
                                   <TableCell>${garmentType.basePrice}</TableCell>
                                   <TableCell>{garmentType.description}</TableCell>
                                   <TableCell>{garmentType.category}</TableCell>
@@ -753,6 +776,11 @@ export function System() {
                   {activeTab === "reports" && (
                     <TabsContent value="reports">
                       <TabsReport />
+                    </TabsContent>
+                  )}
+                  {activeTab === "expenses" && (
+                    <TabsContent value="expenses">
+                      <TabsExpenses />
                     </TabsContent>
                   )}
                 </Suspense>

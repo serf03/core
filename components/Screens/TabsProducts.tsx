@@ -9,6 +9,19 @@ import { TabsContent } from '../ui/tabs';
 // Importar iconos
 import { Edit, Plus, Trash } from 'lucide-react';
 
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+function getInitials(name: string) {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+}
+
+function getAvatarColor(name: string) {
+    const colors = [
+        'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
+        'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
+    ];
+    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[index];
+}
 
 // Definición de las propiedades del componente
 interface TabsProductsProps {
@@ -44,7 +57,6 @@ function TabsProducts(props: TabsProductsProps) {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>ID</TableHead>
                                 <TableHead>Nombre</TableHead>
                                 <TableHead>Precio</TableHead>
                                 <TableHead>Tiempo de Producción (min)</TableHead>
@@ -61,8 +73,16 @@ function TabsProducts(props: TabsProductsProps) {
                                 )
                                 .map(product => (
                                     <TableRow key={product.id}>
-                                        <TableCell>{product.id}</TableCell>
-                                        <TableCell>{product.name}</TableCell>
+                                        <TableCell>
+
+                                            <div className="flex items-center space-x-2">
+                                                <Avatar className={`h-10 w-10 ${getAvatarColor(product.name)}`}>
+                                                    <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${product.name}`} />
+                                                    <AvatarFallback>{getInitials(product.name)}</AvatarFallback>
+                                                </Avatar>
+                                                <span>    {product.name}</span>
+                                            </div>
+                                        </TableCell>
                                         <TableCell>${product.price}</TableCell>
                                         <TableCell>{product.productionTime}</TableCell>
                                         <TableCell>{product.status}</TableCell>

@@ -29,7 +29,7 @@ export default function NewProduct({ isAddProductDialogOpen, setIsAddProductDial
     e.preventDefault()
 
     // Validar que todos los campos estén llenos
-    if (!newProduct.name || newProduct.price <= 0 || newProduct.productionTime <= 0) {
+    if (!newProduct.name || newProduct.productionTime <= 0) {
       toast.error('Por favor, complete todos los campos requeridos y asegúrese de que los valores sean válidos.');
       return;
     }
@@ -96,7 +96,6 @@ export default function NewProduct({ isAddProductDialogOpen, setIsAddProductDial
                   value={newProduct.price}
                   onChange={(e) => setNewProduct({ ...newProduct, price: parseFloat(e.target.value) })}
                   className="pl-10"
-                  required // Añadir atributo required
                 />
               </div>
             </div>

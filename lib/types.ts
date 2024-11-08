@@ -1,4 +1,15 @@
 
+
+
+
+interface Expense {
+    id?: string
+    description: string
+    amount: number
+    date: string
+    idAdministrador: string;
+}
+
 // Definición de tipos
 type UserRole = 'Administrador' | 'Facturador' | 'Operador' | 'Cliente'
 
@@ -7,7 +18,7 @@ interface User {
     name: string
     email: string
     clave: string
-    role: 'Administrador' | 'Facturador' | 'Operador' | 'Cliente',
+    role: UserRole,
     idAdministrador: string;
 }
 
@@ -113,5 +124,5 @@ interface TabsFacturacionProps {
     handleCancelInvoice: (invoice: Invoice) => void;
 }
 
-export type { Attachment, Client, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole }
+export type { Attachment, Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole };
 
