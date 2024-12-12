@@ -18,7 +18,7 @@ export default function AddUserDialog(prop) {
 
     const onSubmit = async () => {
         try {
-            await handleAddUser(prop.newUser)
+            await handleAddUser(prop.newClient)
             toast.success("Usuario agregado exitosamente")
             // Clear the form after adding
             setNewUser({ name: '', email: '', idAdministrador: `${user?.uid}`, role: "Operador" })
@@ -47,8 +47,8 @@ export default function AddUserDialog(prop) {
                                     id="name"
                                     required
                                     placeholder="Ingrese el nombre completo"
-                                    value={prop.newUser.name}
-                                    onChange={(e) => setNewUser({ ...prop.newUser, name: e.target.value })}
+                                    value={prop.newClient?.name}
+                                    onChange={(e) => setNewUser({ ...prop.newClient, name: e.target.value })}
                                     className="pl-10"
                                 />
                             </div>
@@ -64,8 +64,8 @@ export default function AddUserDialog(prop) {
                                     type="email"
                                     required
                                     placeholder="correo@ejemplo.com"
-                                    value={prop.newUser.email}
-                                    onChange={(e) => setNewUser({ ...prop.newUser, email: e.target.value })}
+                                    value={prop.newClient?.email}
+                                    onChange={(e) => setNewUser({ ...prop.newClient, email: e.target.value })}
                                     className="pl-10"
                                 />
                             </div>
@@ -77,8 +77,8 @@ export default function AddUserDialog(prop) {
                             <div className="relative">
                                 <Shield className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                                 <Select
-                                    value={newUser.role}
-                                    onValueChange={(value) => setNewUser({ ...prop.newUser, role: value })}
+                                    value={prop.newClient?.role}
+                                    onValueChange={(value) => setNewUser({ ...prop.newClient, role: value })}
                                 >
                                     <SelectTrigger className="pl-10">
                                         <SelectValue placeholder="Seleccionar rol" />

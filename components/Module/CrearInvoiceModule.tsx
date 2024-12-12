@@ -1,5 +1,6 @@
 import { useAuth } from '@/components/context/AuthContext'
 import { Button } from '@/components/ui/button'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import {
     Dialog,
     DialogContent,
@@ -9,6 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
     Select,
     SelectContent,
@@ -65,6 +67,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
         direccion: "",
 
     })
+    const [open, setOpen] = React.useState(false)
 
     useEffect(() => {
         const filteredClients = props.filterClients()
@@ -278,37 +281,49 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                                 <TableRow key={index}>
                                                     <TableCell>{product?.name}</TableCell>
                                                     <TableCell>
-                                                        <Select
-                                                            value={item.garmentTypeId}
-                                                            onValueChange={(value) => {
-                                                                const garmentTypeId = value
-                                                                const newItems = [...props.newInvoice.items]
-                                                                newItems[index].garmentTypeId = garmentTypeId
-                                                                newItems[index].price = props.calculatePrice(
-                                                                    item.productId,
-                                                                    garmentTypeId
-                                                                )
-                                                                props.setNewInvoice({
-                                                                    ...props.newInvoice,
-                                                                    items: newItems,
-                                                                    total: newItems.reduce(
-                                                                        (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
-                                                                        0
-                                                                    ),
-                                                                })
-                                                            }}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Seleccione tipo" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {props.garmentTypes.map((type) => (
-                                                                    <SelectItem key={type.id} value={type.id || ""}>
-                                                                        {type.name}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <Popover open={open} onOpenChange={setOpen}>
+                                                            <PopoverTrigger asChild>
+                                                                <Button variant="outline" className="w-full justify-start">
+                                                                    {item.garmentTypeId ? props.garmentTypes.find(type => type.id === item.garmentTypeId)?.name : "Seleccione tipo"}
+                                                                </Button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-[200px] p-0">
+                                                                <Command>
+                                                                    <CommandInput placeholder="Buscar tipo de prenda..." />
+                                                                    <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+                                                                    <CommandGroup>
+                                                                        {props.garmentTypes
+                                                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                                                            .map((type) => (
+                                                                                <CommandItem
+                                                                                    key={type.id}
+                                                                                    onSelect={() => {
+                                                                                        const garmentTypeId = type.id || ""
+                                                                                        const newItems = [...props.newInvoice.items]
+                                                                                        newItems[index].garmentTypeId = garmentTypeId
+                                                                                        newItems[index].price = props.calculatePrice(
+                                                                                            item.productId,
+                                                                                            garmentTypeId
+                                                                                        )
+                                                                                        props.setNewInvoice({
+                                                                                            ...props.newInvoice,
+                                                                                            items: newItems,
+                                                                                            total: newItems.reduce(
+                                                                                                (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
+                                                                                                0
+                                                                                            ),
+                                                                                        })
+                                                                                        setOpen(false)
+                                                                                    }}
+                                                                                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                                                                >
+                                                                                    {type.name}
+                                                                                </CommandItem>
+                                                                            ))}
+                                                                    </CommandGroup>
+                                                                </Command>
+                                                            </PopoverContent>
+                                                        </Popover>
                                                     </TableCell>
                                                     <TableCell>
                                                         <Input
@@ -658,3 +673,4 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
 }
 
 export default CrearInvoiceModule
+
