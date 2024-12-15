@@ -1,40 +1,24 @@
 "use client"
 
-import { Button } from "./ui/button"
-import { Dialog, DialogContent } from "./ui/dialog"
+import { Button } from "./ui/button";
+import { Dialog, DialogContent } from "./ui/dialog";
 
-import { addDays, addMinutes, format, setHours, setMinutes } from 'date-fns'
-import { AnimatePresence, motion } from 'framer-motion'
-import {
-  BarChart,
-  Bell,
-  Edit,
-  FileText,
-  HelpCircle,
-  LayoutDashboard,
-  LogOut,
-  NotebookPen,
-  Package,
-  Plus,
-  Search,
-  Settings,
-  Shirt,
-  Trash,
-  Users
-} from 'lucide-react'
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { toast, Toaster } from 'react-hot-toast'
-import * as firebaseServices from "../lib/firebaseServices"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import { addDays, addMinutes, format, setHours, setMinutes } from 'date-fns';
+import { AnimatePresence, motion } from 'framer-motion';
+import { BarChart, Bell, Edit, FileText, HelpCircle, LayoutDashboard, LogOut, NotebookPen, Package, Plus, Search, Settings, Shirt, Trash, Users } from 'lucide-react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { toast, Toaster } from 'react-hot-toast';
+import * as firebaseServices from "../lib/firebaseServices";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu'
-import { Input } from "./ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
-import { Tabs, TabsContent } from "./ui/tabs"
+} from './ui/dropdown-menu';
+import { Input } from "./ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Tabs, TabsContent } from "./ui/tabs";
 
 // Lazy imports for tab components
 const TabsClients = lazy(() => import("./Screens/TabsClients"))
@@ -46,26 +30,27 @@ const TabsReport = lazy(() => import("./Screens/TabsReport"))
 const TabsUsuario = lazy(() => import("./Screens/TabsUsuario"))
 
 //Module content
-import AddClientsDialog from "./Module/AddClientsDialog"
-import AlertsCerrarSesion from "./Module/AlertsCerrarSesionModule"
-import CrearFacturaModule from "./Module/CrearInvoiceModule"
-import EditClientsDialog from "./Module/EditClientsDialog"
-import EditPrendaModule from "./Module/EditPrendaModule"
-import EditProductDialog from "./Module/EditProductDialog"
-import InvoiceReceiptDialog from "./Module/InvoiceReceiptDialog"
-import NewProduct from "./Module/NewProductDialog"
-import StateFacturaDialog from "./Module/StateInvoiceDialog"
+import AddClientsDialog from "./Module/AddClientsDialog";
+import AlertsCerrarSesion from "./Module/AlertsCerrarSesionModule";
+import CrearFacturaModule from "./Module/CrearInvoiceModule";
+import EditClientsDialog from "./Module/EditClientsDialog";
+import EditPrendaModule from "./Module/EditPrendaModule";
+import EditProductDialog from "./Module/EditProductDialog";
+import InvoiceReceiptDialog from "./Module/InvoiceReceiptDialog";
+import NewProduct from "./Module/NewProductDialog";
+import StateFacturaDialog from "./Module/StateInvoiceDialog";
 //Module Alert 
-import { Client, GarmentType, Invoice, Product, ProductionRecord, User } from "../lib/types"
-import CancelAlert from "./Module/CancelAlert"
-import DeleteAlertDialog from "./Module/DeleteAlert"
-import { useAuth } from "./context/AuthContext"
+import { Client, GarmentType, Invoice, Product, ProductionRecord, User } from "../lib/types";
+import CancelAlert from "./Module/CancelAlert";
+import DeleteAlertDialog from "./Module/DeleteAlert";
+import { useAuth } from "./context/AuthContext";
 
-import { getLastInvoiceNumber } from "../lib/firebaseServices"
-import AddUserDialog from "./Module/AddUserDialog"
+import { getLastInvoiceNumber } from "../lib/firebaseServices";
 
-import TabsExpenses from "./Screens/TabsExpenses"
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+import MakePaymentDialog from "./Module/MakePaymentDialog";
+import TabsExpenses from "./Screens/TabsExpenses";
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase();
 }
@@ -105,7 +90,8 @@ export function System() {
     idAdministrador: `${user?.uid}`,
     paymentType: "",
     amountPaid: 0,
-    invoiceNumber: ""
+    invoiceNumber: "",
+    pendingBalance: 0
   })
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [isInvoicePreviewOpen, setIsInvoicePreviewOpen] = useState(false)
@@ -129,17 +115,16 @@ export function System() {
   const [isEditGarmentTypeDialogOpen, setIsEditGarmentTypeDialogOpen] = useState(false)
   const [newGarmentType, setNewGarmentType] = useState<Omit<GarmentType, 'id'>>({ name: '', basePrice: 0, description: '', category: '', idAdministrador: `${user?.uid}` })
   const [editingGarmentType, setEditingGarmentType] = useState<GarmentType | null>(null)
-
+  const [isMakePaymentDialogOpen, setIsMakePaymentDialogOpen] = useState(false)
+  const [invoiceToMakePayment, setInvoiceToMakePayment] = useState<Invoice | null>(null)
 
   useEffect(() => {
-
     const unsubscribeInvoices = firebaseServices.subscribeToInvoices(setInvoices)
     console.log(isAddUserDialogOpen)
     return () => {
       unsubscribeInvoices()
     }
   }, [])
-
 
   // Efecto para cargar datos iniciales y suscribirse a cambios
   useEffect(() => {
@@ -325,7 +310,7 @@ export function System() {
     }
   }
 
-  // Función para calcular la fecha de ent
+  // Función para calcular la fecha de entrega
   const calculatePickupDate = (items: Invoice['items']): string => {
     const now = new Date();
     let totalProductionTime = 0;
@@ -402,7 +387,8 @@ export function System() {
         date,
         status: 'En Proceso',
         paymentType: tpago,
-        amountPaid: mpago
+        amountPaid: mpago || 0,
+        pendingBalance: newInvoice.total - (mpago || 0)
       };
 
       const idRegex = /^[a-zA-Z0-9]{5,}$/; // Alfanumérico y mínimo de 5 caracteres
@@ -440,15 +426,11 @@ export function System() {
     }
   };
 
-
   // Tipos explícitos para los parámetros
   const validateItems = (items: Array<{ productId: string; garmentTypeId: string }>): boolean => {
-
-
     for (const { productId, garmentTypeId } of items) {
       console.log(productId);
       if (productId.length == 0 && productId == "") {
-
         toast.error("El Producto 😑?");
         setIsvali(false)
         return false; // Detener si algún producto no es válido
@@ -472,15 +454,15 @@ export function System() {
       total: 0,
       status: 'Pendiente',
       pickupDate: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
-      color: '#FFD700', idAdministrador: `${user?.uid} `,
+      color: '#FFD700',
+      idAdministrador: `${user?.uid}`,
       paymentType: "",
       amountPaid: 0,
       invoiceNumber: "",
+      pendingBalance: 0
     });
     setIsCreateInvoiceDialogOpen(false);
   };
-
-
 
   const handleChangeInvoiceStatus = async (invoice: Invoice, newStatus: Invoice['status']) => {
     try {
@@ -510,7 +492,7 @@ export function System() {
       try {
         const cancelledInvoice: Invoice = {
           ...invoiceToCancel,
-          status: 'Cancelada' as 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada',
+          status: 'Cancelada',
         }
         await firebaseServices.updateInvoice(cancelledInvoice)
         setIsCancelDialogOpen(false)
@@ -541,6 +523,30 @@ export function System() {
     return 0
   }
 
+  const handleMakePayment = (invoice: Invoice) => {
+    setInvoiceToMakePayment(invoice)
+    setIsMakePaymentDialogOpen(true)
+  }
+
+  const confirmMakePayment = async (amount: number) => {
+    if (invoiceToMakePayment) {
+      try {
+        const updatedInvoice: Invoice = {
+          ...invoiceToMakePayment,
+          amountPaid: (invoiceToMakePayment.amountPaid || 0) + amount,
+          pendingBalance: invoiceToMakePayment.pendingBalance - amount,
+          status: invoiceToMakePayment.pendingBalance - amount <= 0 ? 'Completada' : 'Parcialmente Pagada'
+        }
+        await firebaseServices.updateInvoice(updatedInvoice)
+        setIsMakePaymentDialogOpen(false)
+        setInvoiceToMakePayment(null)
+        toast.success('Pago realizado exitosamente')
+      } catch (error) {
+        console.error("Error making payment: ", error)
+        toast.error("Error al realizar el pago")
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col md:flex-row h-screen ">
@@ -666,6 +672,7 @@ export function System() {
                         setInvoiceToChangeStatus={setInvoiceToChangeStatus}
                         handlePrintInvoice={handlePrintInvoice}
                         handleCancelInvoice={handleCancelInvoice}
+                        handleMakePayment={handleMakePayment}
                       />
                     </TabsContent>
                   )}
@@ -682,6 +689,7 @@ export function System() {
                     <TabsContent value="clients">
                       <TabsClients
                         clients={filteredClients}
+                        invoices={invoices}  // Add this line
                         setIsAddClientDialogOpen={setIsAddClientDialogOpen}
                         searchTerm={searchTerm}
                         setSearchTerm={setSearchTerm}
@@ -738,13 +746,12 @@ export function System() {
                               {filteredGarmentTypes.map((garmentType) => (
                                 <TableRow key={garmentType.id}>
                                   <TableCell>
-
                                     <div className="flex items-center space-x-2">
                                       <Avatar className={`h-10 w-10 ${getAvatarColor(garmentType.name)}`}>
                                         <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${garmentType.name}`} />
                                         <AvatarFallback>{getInitials(garmentType.name)}</AvatarFallback>
                                       </Avatar>
-                                      <span>    {garmentType.name}</span>
+                                      <span>{garmentType.name}</span>
                                     </div>
                                   </TableCell>
                                   <TableCell>${garmentType.basePrice}</TableCell>
@@ -790,7 +797,6 @@ export function System() {
         </main>
       </div>
 
-
       {isAddGarmentTypeDialogOpen && (
         <TabsNewPrenda
           isAddGarmentTypeDialogOpen={isAddGarmentTypeDialogOpen}
@@ -802,17 +808,15 @@ export function System() {
       )}
 
       {isEditGarmentTypeDialogOpen && (
-        <EditPrendaModule isEditGarmentTypeDialogOpen={isEditGarmentTypeDialogOpen} setIsEditGarmentTypeDialogOpen={setIsEditGarmentTypeDialogOpen} editingGarmentType={editingGarmentType} setEditingGarmentType={setEditingGarmentType} handleUpdateGarmentType={handleUpdateGarmentType}></EditPrendaModule>
-      )}
-      {isAddClientDialogOpen && (
-        <AddUserDialog
-          isAddUserDialogOpen={setIsAddUserDialogOpen}  // Error: aquí debe ser booleano
-          setIsAddClientDialogOpen={setIsAddClientDialogOpen}
-          newClient={newClient}
-          setNewClient={setNewClient}
-          handleAddUser={handleAddUser}
+        <EditPrendaModule
+          isEditGarmentTypeDialogOpen={isEditGarmentTypeDialogOpen}
+          setIsEditGarmentTypeDialogOpen={setIsEditGarmentTypeDialogOpen}
+          editingGarmentType={editingGarmentType}
+          setEditingGarmentType={setEditingGarmentType}
+          handleUpdateGarmentType={handleUpdateGarmentType}
         />
       )}
+
       {isAddClientDialogOpen && (
         <AddClientsDialog
           isAddClientDialogOpen={isAddClientDialogOpen}
@@ -866,6 +870,8 @@ export function System() {
           handleCreateInvoice={handleCreateInvoice}
           filterClients={filterClients}
           calculatePrice={calculatePrice}
+          getLastInvoiceNumber={getLastInvoiceNumber}
+          resetInvoice={resetInvoice}
         />
       )}
 
@@ -904,8 +910,19 @@ export function System() {
           handleChangeInvoiceStatus={handleChangeInvoiceStatus}
         />
       )}
-      <AlertsCerrarSesion isLogoutDialogOpen={isLogoutDialogOpen} handleLogout={handleLogout}></AlertsCerrarSesion>
+
+      {isMakePaymentDialogOpen && (
+        <MakePaymentDialog
+          isMakePaymentDialogOpen={isMakePaymentDialogOpen}
+          setIsMakePaymentDialogOpen={setIsMakePaymentDialogOpen}
+          invoiceToMakePayment={invoiceToMakePayment}
+          confirmMakePayment={confirmMakePayment}
+        />
+      )}
+
+      <AlertsCerrarSesion isLogoutDialogOpen={isLogoutDialogOpen} handleLogout={handleLogout} />
       <Toaster />
     </div>
   )
 }
+

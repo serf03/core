@@ -49,6 +49,8 @@ interface CrearFacturaModuleProps {
     calculatePrice: (productId: string, garmentTypeId: string) => number
     calculatePickupDate: (items: InvoiceItem[]) => string
     handleCreateInvoice: (paymentType: string, amountPaid?: number) => void
+    getLastInvoiceNumber: () => Promise<number>
+    resetInvoice: () => void
 }
 
 function CrearInvoiceModule(props: CrearFacturaModuleProps) {
@@ -65,9 +67,8 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
         cedula: '',
         idAdministrador: `${user?.uid}`,
         direccion: "",
-
     })
-    const [open, setOpen] = React.useState(false)
+    const [openStates, setOpenStates] = useState<{ [key: number]: boolean }>({});
 
     useEffect(() => {
         const filteredClients = props.filterClients()
@@ -135,14 +136,18 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
     }
 
     const handlePaymentSubmit = () => {
-        if (paymentType === 'cash' && amountPaid < props.newInvoice.total) {
-            toast.error("El monto pagado es menor que el total de la factura")
-            return
+        if (paymentType === 'cash' || paymentType === 'card') {
+            if (amountPaid < props.newInvoice.total) {
+                props.handleCreateInvoice(paymentType, amountPaid);
+            } else {
+                props.handleCreateInvoice(paymentType, props.newInvoice.total);
+            }
+        } else if (paymentType === 'pending') {
+            props.handleCreateInvoice(paymentType, 0);
         }
-        props.handleCreateInvoice(paymentType, amountPaid)
-        setIsPaymentDialogOpen(false)
-        props.setIsCreateInvoiceDialogOpen(false)
-    }
+        setIsPaymentDialogOpen(false);
+        props.setIsCreateInvoiceDialogOpen(false);
+    };
 
     const isInvoiceValid = () => {
         return (
@@ -151,6 +156,54 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
             props.newInvoice.items.every(item => item.productId && item.garmentTypeId && item.quantity > 0)
         )
     }
+
+    const handleAddProduct = () => {
+        props.setNewInvoice({
+            ...props.newInvoice,
+            items: [
+                ...props.newInvoice.items,
+                { productId: '', garmentTypeId: '', quantity: 1, price: 0, attachments: [], idAdministrador: `${user?.uid}` },
+            ],
+        })
+    }
+
+    const handleRemoveProduct = (index: number) => {
+        const newItems = [...props.newInvoice.items]
+        newItems.splice(index, 1)
+        props.setNewInvoice({
+            ...props.newInvoice,
+            items: newItems,
+            total: newItems.reduce(
+                (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
+                0
+            ),
+        })
+    }
+
+    const handleProductChange = (index: number, field: keyof InvoiceItem, value: string | number) => {
+        const newItems = [...props.newInvoice.items]
+        newItems[index] = { ...newItems[index], [field]: value }
+
+        if (field === 'productId' || field === 'garmentTypeId') {
+            newItems[index].price = props.calculatePrice(newItems[index].productId, newItems[index].garmentTypeId)
+        }
+
+        props.setNewInvoice({
+            ...props.newInvoice,
+            items: newItems,
+            total: newItems.reduce(
+                (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
+                0
+            ),
+        })
+    }
+
+    const handleOpenChange = (index: number, isOpen: boolean) => {
+        setOpenStates(prev => ({
+            ...prev,
+            [index]: isOpen
+        }));
+    };
 
     return (
         <>
@@ -230,34 +283,12 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                 </Button>
                             </div>
 
-                            {/* Producto Select */}
-                            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                                <Label htmlFor="product" className="sm:text-right">
-                                    Servicio
-                                </Label>
-                                <Select
-                                    onValueChange={(value) => {
-                                        const productId = value
-                                        props.setNewInvoice({
-                                            ...props.newInvoice,
-                                            items: [
-                                                ...props.newInvoice.items,
-                                                { productId, garmentTypeId: '', quantity: 1, price: 0, attachments: [], idAdministrador: `${user?.uid}` },
-                                            ],
-                                        })
-                                    }}
-                                >
-                                    <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Seleccione un producto" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {props.products.map((product) => (
-                                            <SelectItem key={product.id} value={product.id || ""}>
-                                                {product.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            {/* Agregar Producto Button */}
+                            <div className="flex justify-end">
+                                <Button type="button" onClick={handleAddProduct}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Agregar Producto
+                                </Button>
                             </div>
 
                             {/* Invoice Items Table */}
@@ -275,143 +306,114 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {props.newInvoice.items.map((item, index) => {
-                                            const product = props.products.find((p) => p.id === item.productId)
-                                            return (
-                                                <TableRow key={index}>
-                                                    <TableCell>{product?.name}</TableCell>
-                                                    <TableCell>
-                                                        <Popover open={open} onOpenChange={setOpen}>
-                                                            <PopoverTrigger asChild>
-                                                                <Button variant="outline" className="w-full justify-start">
-                                                                    {item.garmentTypeId ? props.garmentTypes.find(type => type.id === item.garmentTypeId)?.name : "Seleccione tipo"}
-                                                                </Button>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-[200px] p-0">
-                                                                <Command>
-                                                                    <CommandInput placeholder="Buscar tipo de prenda..." />
-                                                                    <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-                                                                    <CommandGroup>
-                                                                        {props.garmentTypes
-                                                                            .sort((a, b) => a.name.localeCompare(b.name))
-                                                                            .map((type) => (
-                                                                                <CommandItem
-                                                                                    key={type.id}
-                                                                                    onSelect={() => {
-                                                                                        const garmentTypeId = type.id || ""
-                                                                                        const newItems = [...props.newInvoice.items]
-                                                                                        newItems[index].garmentTypeId = garmentTypeId
-                                                                                        newItems[index].price = props.calculatePrice(
-                                                                                            item.productId,
-                                                                                            garmentTypeId
-                                                                                        )
-                                                                                        props.setNewInvoice({
-                                                                                            ...props.newInvoice,
-                                                                                            items: newItems,
-                                                                                            total: newItems.reduce(
-                                                                                                (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
-                                                                                                0
-                                                                                            ),
-                                                                                        })
-                                                                                        setOpen(false)
-                                                                                    }}
-                                                                                    className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                                                                                >
-                                                                                    {type.name}
-                                                                                </CommandItem>
-                                                                            ))}
-                                                                    </CommandGroup>
-                                                                </Command>
-                                                            </PopoverContent>
-                                                        </Popover>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Input
-                                                            type="number"
-                                                            value={item.quantity}
-                                                            onChange={(e) => {
-                                                                const newQuantity = parseInt(e.target.value)
-                                                                const newItems = [...props.newInvoice.items]
-                                                                newItems[index].quantity = newQuantity
-                                                                props.setNewInvoice({
-                                                                    ...props.newInvoice,
-                                                                    items: newItems,
-                                                                    total: newItems.reduce(
-                                                                        (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
-                                                                        0
-                                                                    ),
-                                                                })
-                                                            }}
-                                                            min={1}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>${item.price}</TableCell>
-                                                    <TableCell>
-                                                        {item.attachments.map((attachment, attIndex) => (
-                                                            <div key={attachment.id} className="flex items-center space-x-2 mb-2">
-                                                                <Input
-                                                                    placeholder="Nombre"
-                                                                    value={attachment.name}
-                                                                    onChange={(e) => handleAttachmentChange(index, attIndex, 'name', e.target.value)}
-                                                                    className="w-1/2"
-                                                                />
-                                                                <Input
-                                                                    type="number"
-                                                                    placeholder="Precio"
-                                                                    value={attachment.price}
-                                                                    onChange={(e) => handleAttachmentChange(index, attIndex, 'price', parseFloat(e.target.value))}
-                                                                    className="w-1/4"
-                                                                />
-                                                                <Button
-                                                                    variant="destructive"
-                                                                    size="sm"
-                                                                    onClick={() => handleRemoveAttachment(index, attIndex)}
-                                                                >
-                                                                    <X className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        ))}
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            disabled
-                                                            onClick={() => handleAddAttachment(index)}
-                                                        >
-                                                            <Plus className="h-4 w-4 mr-2" />
-                                                            Agregar Attachment
-                                                        </Button>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        ${item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0)}
-                                                    </TableCell>
-
-                                                    <TableCell>
-                                                        <Button
-                                                            variant="destructive"
-                                                            size="sm"
-                                                            onClick={() => {
-                                                                const newItems = props.newInvoice.items.filter(
-                                                                    (_, i) => i !== index
-                                                                )
-                                                                props.setNewInvoice({
-                                                                    ...props.newInvoice,
-                                                                    items: newItems,
-                                                                    total: newItems.reduce(
-                                                                        (sum, item) =>
-                                                                            sum +
-                                                                            item.price * item.quantity +
-                                                                            item.attachments.reduce((sum, att) => sum + att.price, 0),
-                                                                        0
-                                                                    ),
-                                                                })
-                                                            }}
-                                                        >
-                                                            <X className="h-4 w-4" />
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )
-                                        })}
+                                        {props.newInvoice.items.map((item, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>
+                                                    <Select
+                                                        value={item.productId}
+                                                        onValueChange={(value) => handleProductChange(index, 'productId', value)}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Seleccione un producto" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {props.products.map((product) => (
+                                                                <SelectItem key={product.id} value={product.id || ""}>
+                                                                    {product.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Popover open={openStates[index]} onOpenChange={(isOpen) => handleOpenChange(index, isOpen)}>
+                                                        <PopoverTrigger asChild>
+                                                            <Button variant="outline" className="w-full justify-start">
+                                                                {item.garmentTypeId ? props.garmentTypes.find(type => type.id === item.garmentTypeId)?.name : "Seleccione tipo"}
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-[200px] p-0">
+                                                            <Command>
+                                                                <CommandInput placeholder="Buscar tipo de prenda..." />
+                                                                <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+                                                                <CommandGroup>
+                                                                    {props.garmentTypes
+                                                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                                                        .map((type) => (
+                                                                            <CommandItem
+                                                                                key={type.id}
+                                                                                onSelect={() => {
+                                                                                    const garmentTypeId = type.id || ""
+                                                                                    handleProductChange(index, 'garmentTypeId', garmentTypeId)
+                                                                                    handleOpenChange(index, false)
+                                                                                }}
+                                                                                className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                                                            >
+                                                                                {type.name}
+                                                                            </CommandItem>
+                                                                        ))}
+                                                                </CommandGroup>
+                                                            </Command>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Input
+                                                        type="number"
+                                                        value={item.quantity}
+                                                        onChange={(e) => handleProductChange(index, 'quantity', parseInt(e.target.value))}
+                                                        min={1}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>${item.price}</TableCell>
+                                                <TableCell>
+                                                    {item.attachments.map((attachment, attIndex) => (
+                                                        <div key={attachment.id} className="flex items-center space-x-2 mb-2">
+                                                            <Input
+                                                                placeholder="Nombre"
+                                                                value={attachment.name}
+                                                                onChange={(e) => handleAttachmentChange(index, attIndex, 'name', e.target.value)}
+                                                                className="w-1/2"
+                                                            />
+                                                            <Input
+                                                                type="number"
+                                                                placeholder="Precio"
+                                                                value={attachment.price}
+                                                                onChange={(e) => handleAttachmentChange(index, attIndex, 'price', parseFloat(e.target.value))}
+                                                                className="w-1/4"
+                                                            />
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => handleRemoveAttachment(index, attIndex)}
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleAddAttachment(index)}
+                                                    >
+                                                        <Plus className="h-4 w-4 mr-2" />
+                                                        Agregar Attachment
+                                                    </Button>
+                                                </TableCell>
+                                                <TableCell>
+                                                    ${item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => handleRemoveProduct(index)}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
                                     </TableBody>
                                 </Table>
                             </div>

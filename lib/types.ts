@@ -1,7 +1,3 @@
-
-
-
-
 interface Expense {
     id?: string
     description: string
@@ -25,7 +21,7 @@ interface User {
 interface Client {
     id?: string; // Propiedad requerida
     name: string;
-    email: string;
+    email: string
     phone: string;
     cedula: string;
     direccion: string; // Asegúrate de que este nombre coincida
@@ -70,7 +66,7 @@ interface Invoice {
     clientId: string
     items: InvoiceItem[]
     total: number
-    status: 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada'
+    status: 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada' | 'Parcialmente Pagada'
     date: string
     pickupDate: string
     color: string
@@ -78,6 +74,7 @@ interface Invoice {
     paymentType: string
     amountPaid?: number,
     invoiceNumber: string
+    pendingBalance: number
 }
 interface InvoiceItemDetails {
     product: string
@@ -122,6 +119,7 @@ interface TabsFacturacionProps {
     setIsChangeInvoiceStatusDialogOpen: (isOpen: boolean) => void;
     handlePrintInvoice: (invoice: Invoice) => void;
     handleCancelInvoice: (invoice: Invoice) => void;
+    handleMakePayment: (invoice: Invoice) => void;
 }
 
 export type { Attachment, Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole };

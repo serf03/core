@@ -44,7 +44,7 @@
     "components/Screens/TabsProduction.tsx",
     "components/Screens/TabsFacturacion.tsx",
     "components/Screens/TabsDashboard.jsx",
-    "components/Screens/TabsClients.jsx",
+    "components/Screens/TabsClients.tsx",
     "components/Module/InvoiceReceiptDialog.jsx"
   ],
   "exclude": [

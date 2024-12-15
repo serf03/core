@@ -36,14 +36,16 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 gap-2">
-                        <div className='col-span-2 w-full'>Cliente: <strong>{client?.name}</strong> </div>
+                        <div className='col-span-2 w-full'>Cliente: <strong>{client?.name}</strong></div>
                         <div>Total: ${invoice.total}</div>
+                        <div>Pendiente: ${invoice.pendingBalance}</div>
                         <div>Estado:
                             <Badge
                                 variant={
                                     invoice.status === 'En Proceso' ? 'default' :
                                         invoice.status === 'Completada' || invoice.status === 'Entregada' ? 'success' :
-                                            'destructive'
+                                            invoice.status === 'Parcialmente Pagada' ? 'secondary' :
+                                                'destructive'
                                 }
                             >
                                 {invoice.status}
@@ -52,24 +54,33 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                         <div className='col-span-2 w-full'>Facturado: {invoice.date}</div>
                         <div className='col-span-2 w-full'>Retiro: {invoice.pickupDate}</div>
                     </div>
-                    <div className="mt-4 flex space-x-2">
+                    <div className="mt-4 flex flex-wrap gap-2">
                         <Button
                             onClick={() => {
                                 props.setInvoiceToChangeStatus(invoice);
                                 props.setIsChangeInvoiceStatusDialogOpen(true);
                             }}
                             disabled={invoice.status === 'Entregada' || invoice.status === 'Cancelada'}
+                            size="sm"
                         >
                             Cambiar Estado
                         </Button>
-                        <Button onClick={() => props.handlePrintInvoice(invoice)}>
+                        <Button onClick={() => props.handlePrintInvoice(invoice)} size="sm">
                             <Printer className="h-4 w-4 mr-2" />
                             Imprimir
+                        </Button>
+                        <Button
+                            onClick={() => props.handleMakePayment(invoice)}
+                            disabled={invoice.status === 'Cancelada' || invoice.pendingBalance === 0}
+                            size="sm"
+                        >
+                            Abonar
                         </Button>
                         {invoice.status !== 'Cancelada' && (
                             <Button
                                 variant="destructive"
                                 onClick={() => props.handleCancelInvoice(invoice)}
+                                size="sm"
                             >
                                 <XCircle className="h-4 w-4 mr-2" />
                                 Cancelar
@@ -136,6 +147,23 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                     .toLowerCase()
                                                     .includes(props.searchTerm.toLowerCase())
                                         )
+                                        .sort((a, b) => {
+                                            // First, sort by status priority
+                                            const statusPriority = {
+                                                'En Proceso': 0,
+                                                'Pendiente': 1,
+                                                'Parcialmente Pagada': 2,
+                                                'Completada': 3,
+                                                'Entregada': 4,
+                                                'Cancelada': 5
+                                            };
+
+                                            const statusDiff = (statusPriority[a.status] || 0) - (statusPriority[b.status] || 0);
+                                            if (statusDiff !== 0) return statusDiff;
+
+                                            // If status is the same, sort by date (newest first)
+                                            return new Date(b.date).getTime() - new Date(a.date).getTime();
+                                        })
                                         .map(renderInvoiceItem)}
                                 </motion.div>
                             ) : (
@@ -168,11 +196,27 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                             .toLowerCase()
                                                             .includes(props.searchTerm.toLowerCase())
                                                 )
+                                                .sort((a, b) => {
+                                                    // First, sort by status priority
+                                                    const statusPriority = {
+                                                        'En Proceso': 0,
+                                                        'Pendiente': 1,
+                                                        'Parcialmente Pagada': 2,
+                                                        'Completada': 3,
+                                                        'Entregada': 4,
+                                                        'Cancelada': 5
+                                                    };
+
+                                                    const statusDiff = (statusPriority[a.status] || 0) - (statusPriority[b.status] || 0);
+                                                    if (statusDiff !== 0) return statusDiff;
+
+                                                    // If status is the same, sort by date (newest first)
+                                                    return new Date(b.date).getTime() - new Date(a.date).getTime();
+                                                })
                                                 .map(invoice => (
                                                     <TableRow key={invoice.id}>
                                                         <TableCell>{invoice.invoiceNumber}</TableCell>
                                                         <TableCell>
-
                                                             <div className="flex items-center space-x-2">
                                                                 <Avatar className={`h-10 w-10 ${getAvatarColor(props.clients.find(c => c.id === invoice.clientId)?.name || "")}`}>
                                                                     <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${props.clients.find(c => c.id === invoice.clientId)?.name || ""}`} />
@@ -180,8 +224,6 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                                 </Avatar>
                                                                 <span>{props.clients.find(c => c.id === invoice.clientId)?.name}</span>
                                                             </div>
-
-
                                                         </TableCell>
                                                         <TableCell>${invoice.total}</TableCell>
                                                         <TableCell>
@@ -189,12 +231,17 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                                 variant={
                                                                     invoice.status === 'En Proceso' ? 'default' :
                                                                         invoice.status === 'Completada' || invoice.status === 'Entregada' ? 'success' :
-                                                                            'destructive'
+                                                                            invoice.status === 'Parcialmente Pagada' ? 'secondary' :
+                                                                                'destructive'
                                                                 }
                                                             >
                                                                 {invoice.status}
                                                             </Badge>
-
+                                                            {invoice.pendingBalance > 0 && (
+                                                                <span className="ml-2 text-sm text-gray-500">
+                                                                    Pendiente: ${invoice.pendingBalance.toFixed(2)}
+                                                                </span>
+                                                            )}
                                                         </TableCell>
                                                         <TableCell>{invoice.date}</TableCell>
                                                         <TableCell>{invoice.pickupDate}</TableCell>
@@ -218,6 +265,12 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                                 <Button onClick={() => props.handlePrintInvoice(invoice)}>
                                                                     <Printer className="h-4 w-4 mr-2" />
                                                                     Imprimir
+                                                                </Button>
+                                                                <Button
+                                                                    onClick={() => props.handleMakePayment(invoice)}
+                                                                    disabled={invoice.status === 'Cancelada' || invoice.pendingBalance === 0}
+                                                                >
+                                                                    Abonar
                                                                 </Button>
                                                                 {invoice.status !== 'Cancelada' && (
                                                                     <Button
@@ -245,3 +298,4 @@ function TabsFacturacion(props: TabsFacturacionProps) {
 }
 
 export default TabsFacturacion;
+
