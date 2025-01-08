@@ -155,7 +155,9 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                 'Parcialmente Pagada': 2,
                                                 'Completada': 3,
                                                 'Entregada': 4,
-                                                'Cancelada': 5
+                                                'Cancelada': 5,
+                                                "Lavando": 6,
+                                                "Planchando": 7
                                             };
 
                                             const statusDiff = (statusPriority[a.status] || 0) - (statusPriority[b.status] || 0);
@@ -204,7 +206,9 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                         'Parcialmente Pagada': 2,
                                                         'Completada': 3,
                                                         'Entregada': 4,
-                                                        'Cancelada': 5
+                                                        'Cancelada': 5,
+                                                        "Lavando": 6,
+                                                        "Planchando": 7
                                                     };
 
                                                     const statusDiff = (statusPriority[a.status] || 0) - (statusPriority[b.status] || 0);
@@ -298,4 +302,3 @@ function TabsFacturacion(props: TabsFacturacionProps) {
 }
 
 export default TabsFacturacion;
-

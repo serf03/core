@@ -1,11 +1,15 @@
-// components/App.tsx
 "use client";
+
+import dynamic from 'next/dynamic';
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import CinematicPlanetLoading from "./Loading";
 import Layout from './Module/LayoutAnimate';
 import { LoginScreen } from "./Screens/LoginScreen";
 import { System } from './System';
 import { ToastProvider } from "./ui/use-toast";
+
+const DynamicCinematicPlanetLoading = dynamic(() => import('./Loading'), {
+    ssr: false,
+});
 
 export function App() {
     return (
@@ -18,16 +22,16 @@ export function App() {
 }
 
 function AppContent() {
-    const { user, loading } = useAuth(); // Asegúrate de que `useAuth` se usa aquí correctamente
+    const { user, loading } = useAuth();
 
-    // Muestra un componente de carga mientras se verifica el estado de autenticación
     if (loading) {
-        return <CinematicPlanetLoading />; // Componente de carga
+        return <DynamicCinematicPlanetLoading />;
     }
 
     return (
         <Layout>
-            {user ? <System /> : <LoginScreen />} {/* Renderiza dashboard si hay usuario, de lo contrario, pantalla de login */}
+            {user ? <System /> : <LoginScreen />}
         </Layout>
     );
 }
+

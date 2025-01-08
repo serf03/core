@@ -1,24 +1,24 @@
 "use client"
 
-import { Button } from "./ui/button";
-import { Dialog, DialogContent } from "./ui/dialog";
+import { Button } from "./ui/button"
+import { Dialog, DialogContent } from "./ui/dialog"
 
-import { addDays, addMinutes, format, setHours, setMinutes } from 'date-fns';
-import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart, Bell, Edit, FileText, HelpCircle, LayoutDashboard, LogOut, NotebookPen, Package, Plus, Search, Settings, Shirt, Trash, Users } from 'lucide-react';
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { toast, Toaster } from 'react-hot-toast';
-import * as firebaseServices from "../lib/firebaseServices";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { addDays, addMinutes, format, setHours, setMinutes } from 'date-fns'
+import { AnimatePresence, motion } from 'framer-motion'
+import { BarChart, Bell, Edit, FileText, HelpCircle, LayoutDashboard, LogOut, NotebookPen, Package, Plus, Search, Settings, Shirt, Trash, Users } from 'lucide-react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { toast, Toaster } from 'react-hot-toast'
+import * as firebaseServices from "../lib/firebaseServices"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from './ui/dropdown-menu';
-import { Input } from "./ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Tabs, TabsContent } from "./ui/tabs";
+} from './ui/dropdown-menu'
+import { Input } from "./ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
+import { Tabs, TabsContent } from "./ui/tabs"
 
 // Lazy imports for tab components
 const TabsClients = lazy(() => import("./Screens/TabsClients"))
@@ -30,26 +30,27 @@ const TabsReport = lazy(() => import("./Screens/TabsReport"))
 const TabsUsuario = lazy(() => import("./Screens/TabsUsuario"))
 
 //Module content
-import AddClientsDialog from "./Module/AddClientsDialog";
-import AlertsCerrarSesion from "./Module/AlertsCerrarSesionModule";
-import CrearFacturaModule from "./Module/CrearInvoiceModule";
-import EditClientsDialog from "./Module/EditClientsDialog";
-import EditPrendaModule from "./Module/EditPrendaModule";
-import EditProductDialog from "./Module/EditProductDialog";
-import InvoiceReceiptDialog from "./Module/InvoiceReceiptDialog";
-import NewProduct from "./Module/NewProductDialog";
-import StateFacturaDialog from "./Module/StateInvoiceDialog";
+import AddClientsDialog from "./Module/AddClientsDialog"
+import AlertsCerrarSesion from "./Module/AlertsCerrarSesionModule"
+import CrearFacturaModule from "./Module/CrearInvoiceModule"
+import EditClientsDialog from "./Module/EditClientsDialog"
+import EditPrendaModule from "./Module/EditPrendaModule"
+import EditProductDialog from "./Module/EditProductDialog"
+import InvoiceReceiptDialog from "./Module/InvoiceReceiptDialog"
+import NewProduct from "./Module/NewProductDialog"
+import StateFacturaDialog from "./Module/StateInvoiceDialog"
 //Module Alert 
-import { Client, GarmentType, Invoice, Product, ProductionRecord, User } from "../lib/types";
-import CancelAlert from "./Module/CancelAlert";
-import DeleteAlertDialog from "./Module/DeleteAlert";
-import { useAuth } from "./context/AuthContext";
+import { Client, GarmentType, Invoice, Product, ProductionRecord, User } from "../lib/types"
+import CancelAlert from "./Module/CancelAlert"
+import DeleteAlertDialog from "./Module/DeleteAlert"
+import { useAuth } from "./context/AuthContext"
 
-import { getLastInvoiceNumber } from "../lib/firebaseServices";
+import { getLastInvoiceNumber } from "../lib/firebaseServices"
+import AddUserDialog from "./Module/AddUserDialog"
 
-import MakePaymentDialog from "./Module/MakePaymentDialog";
-import TabsExpenses from "./Screens/TabsExpenses";
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import MakePaymentDialog from "./Module/MakePaymentDialog"
+import TabsExpenses from "./Screens/TabsExpenses"
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -110,7 +111,7 @@ export function System() {
   const [invoiceToChangeStatus, setInvoiceToChangeStatus] = useState<Invoice | null>(null)
   const [isVali, setIsvali] = useState<boolean>(false);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState<boolean>(false);
-  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false)
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false) // Added state
   const [isAddGarmentTypeDialogOpen, setIsAddGarmentTypeDialogOpen] = useState(false)
   const [isEditGarmentTypeDialogOpen, setIsEditGarmentTypeDialogOpen] = useState(false)
   const [newGarmentType, setNewGarmentType] = useState<Omit<GarmentType, 'id'>>({ name: '', basePrice: 0, description: '', category: '', idAdministrador: `${user?.uid}` })
@@ -119,8 +120,8 @@ export function System() {
   const [invoiceToMakePayment, setInvoiceToMakePayment] = useState<Invoice | null>(null)
 
   useEffect(() => {
+    setIsAddUserDialogOpen(false);
     const unsubscribeInvoices = firebaseServices.subscribeToInvoices(setInvoices)
-    console.log(isAddUserDialogOpen)
     return () => {
       unsubscribeInvoices()
     }
@@ -258,7 +259,7 @@ export function System() {
       console.error("Error adding client: ", error)
       toast.error("Error al agregar el cliente")
     }
-  }
+  };
 
   const handleUpdateClient = async () => {
     if (editingClient) {
@@ -272,7 +273,7 @@ export function System() {
         toast.error("Error al actualizar el cliente")
       }
     }
-  }
+  };
 
   const handleDeleteClient = async (id: string) => {
     try {
@@ -282,7 +283,7 @@ export function System() {
       console.error("Error deleting client: ", error)
       toast.error("Error al eliminar el cliente")
     }
-  }
+  };
 
   // Funciones de manejo de productos
 
@@ -298,7 +299,7 @@ export function System() {
         toast.error("Error al actualizar el producto")
       }
     }
-  }
+  };
 
   const handleDeleteProduct = async (id: string) => {
     try {
@@ -308,7 +309,7 @@ export function System() {
       console.error("Error deleting product: ", error)
       toast.error("Error al eliminar el producto")
     }
-  }
+  };
 
   // Función para calcular la fecha de entrega
   const calculatePickupDate = (items: Invoice['items']): string => {
@@ -689,7 +690,7 @@ export function System() {
                     <TabsContent value="clients">
                       <TabsClients
                         clients={filteredClients}
-                        invoices={invoices}  // Add this line
+                        invoices={invoices}
                         setIsAddClientDialogOpen={setIsAddClientDialogOpen}
                         searchTerm={searchTerm}
                         setSearchTerm={setSearchTerm}
@@ -872,6 +873,7 @@ export function System() {
           calculatePrice={calculatePrice}
           getLastInvoiceNumber={getLastInvoiceNumber}
           resetInvoice={resetInvoice}
+          invoices={invoices}
         />
       )}
 
@@ -917,6 +919,16 @@ export function System() {
           setIsMakePaymentDialogOpen={setIsMakePaymentDialogOpen}
           invoiceToMakePayment={invoiceToMakePayment}
           confirmMakePayment={confirmMakePayment}
+        />
+      )}
+
+      {isAddUserDialogOpen && (
+        <AddUserDialog
+          isAddUserDialogOpen={isAddUserDialogOpen}
+          setIsAddUserDialogOpen={setIsAddUserDialogOpen}
+          newUser={newUser}
+          setNewUser={setNewUser}
+          handleAddUser={handleAddUser}
         />
       )}
 

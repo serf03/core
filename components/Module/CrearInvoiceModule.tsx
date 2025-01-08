@@ -1,4 +1,5 @@
 import { useAuth } from '@/components/context/AuthContext'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import {
@@ -26,11 +27,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
-import * as firebaseServices from "@/lib/firebaseServices"
 import { Attachment, Client, GarmentType, Invoice, InvoiceItem, Product } from '@/lib/types'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Banknote, Calendar, CreditCard, Mail, Palette, Phone, Plus, Search, User, X } from 'lucide-react'
+import { AlertCircle, Banknote, Calendar, CheckCircle2, CreditCard, Palette, Plus, Search, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 
@@ -51,35 +50,43 @@ interface CrearFacturaModuleProps {
     handleCreateInvoice: (paymentType: string, amountPaid?: number) => void
     getLastInvoiceNumber: () => Promise<number>
     resetInvoice: () => void
+    invoices: Invoice[]
 }
 
 function CrearInvoiceModule(props: CrearFacturaModuleProps) {
     const { user } = useAuth()
 
-    const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false)
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
     const [paymentType, setPaymentType] = useState<'cash' | 'card' | 'pending'>('cash')
     const [amountPaid, setAmountPaid] = useState(0)
-    const [newClient, setNewClient] = useState<Client>({
-        name: '',
-        email: '',
-        phone: '',
-        cedula: '',
-        idAdministrador: `${user?.uid}`,
-        direccion: "",
-    })
     const [openStates, setOpenStates] = useState<{ [key: number]: boolean }>({});
+    const [selectedClientDebt, setSelectedClientDebt] = useState<number>(0)
 
     useEffect(() => {
         const filteredClients = props.filterClients()
         if (filteredClients.length === 1) {
             const client = filteredClients[0]
-            props.setNewInvoice({
-                ...props.newInvoice,
-                clientId: client.id || "",
-            })
+            if (client.id !== props.newInvoice.clientId) {
+                props.setNewInvoice(prev => ({
+                    ...prev,
+                    clientId: client.id || "",
+                }))
+                // Calculate client's debt
+                const clientDebt = props.invoices
+                    .filter(invoice => invoice.clientId === client.id && invoice.status !== 'Cancelada' && invoice.pendingBalance > 0)
+                    .reduce((total, invoice) => total + invoice.pendingBalance, 0)
+                setSelectedClientDebt(clientDebt)
+            }
         }
-    }, [props.clientFilter, props.clientFilterType])
+    }, [props.clientFilter, props.clientFilterType, props.invoices, props.filterClients, props.newInvoice.clientId, props.setNewInvoice])
+
+    useEffect(() => {
+        const newTotal = props.newInvoice.items.reduce(
+            (sum, item) => sum + (item.price * item.quantity) + item.attachments.reduce((attSum, att) => attSum + att.price, 0),
+            0
+        );
+        props.setNewInvoice(prev => ({ ...prev, total: newTotal }));
+    }, [props.newInvoice.items]);
 
     const handleAddAttachment = (itemIndex: number) => {
         const newItems = [...props.newInvoice.items]
@@ -104,36 +111,28 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
         field: keyof Attachment,
         value: string | number
     ) => {
-        const newItems = [...props.newInvoice.items]
+        props.setNewInvoice(prev => {
+            const newItems = [...prev.items];
 
-        if (newItems[itemIndex] && newItems[itemIndex].attachments[attachmentIndex]) {
-            newItems[itemIndex].attachments[attachmentIndex] = {
-                ...newItems[itemIndex].attachments[attachmentIndex],
-                [field]: value,
+            if (newItems[itemIndex] && newItems[itemIndex].attachments[attachmentIndex]) {
+                newItems[itemIndex].attachments[attachmentIndex] = {
+                    ...newItems[itemIndex].attachments[attachmentIndex],
+                    [field]: field === 'price' ? Number(value) : value,
+                };
             }
-        }
 
-        props.setNewInvoice({ ...props.newInvoice, items: newItems })
-    }
+            const newTotal = newItems.reduce(
+                (sum, item) => sum + (item.price * item.quantity) + item.attachments.reduce((attSum, att) => attSum + att.price, 0),
+                0
+            );
 
-    const handleCreateNewClient = async () => {
-        try {
-            await firebaseServices.addClient(newClient)
-            setNewClient({
-                name: '',
-                email: '',
-                phone: '',
-                cedula: '',
-                direccion: "",
-                idAdministrador: `${user?.uid}`
-            })
-            setIsNewClientDialogOpen(false)
-            toast.success('Cliente agregado exitosamente')
-        } catch (error) {
-            console.error("Error adding client: ", error)
-            toast.error("Error al agregar el cliente")
-        }
-    }
+            return {
+                ...prev,
+                items: newItems,
+                total: newTotal,
+            };
+        });
+    };
 
     const handlePaymentSubmit = () => {
         if (paymentType === 'cash' || paymentType === 'card') {
@@ -181,22 +180,40 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
     }
 
     const handleProductChange = (index: number, field: keyof InvoiceItem, value: string | number) => {
-        const newItems = [...props.newInvoice.items]
-        newItems[index] = { ...newItems[index], [field]: value }
+        props.setNewInvoice(prev => {
+            const newItems = [...prev.items];
+            newItems[index] = { ...newItems[index], [field]: value };
 
-        if (field === 'productId' || field === 'garmentTypeId') {
-            newItems[index].price = props.calculatePrice(newItems[index].productId, newItems[index].garmentTypeId)
-        }
+            if (field === 'productId' || field === 'garmentTypeId' || field === 'quantity') {
+                const productId = field === 'productId' ? value as string : newItems[index].productId;
+                const garmentTypeId = field === 'garmentTypeId' ? value as string : newItems[index].garmentTypeId;
+                const quantity = field === 'quantity' ? Number(value) : newItems[index].quantity;
 
-        props.setNewInvoice({
-            ...props.newInvoice,
-            items: newItems,
-            total: newItems.reduce(
-                (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
+                const product = props.products.find(p => p.id === productId);
+                const garmentType = props.garmentTypes.find(g => g.id === garmentTypeId);
+
+                if (product && garmentType) {
+                    const basePrice = product.price + garmentType.basePrice;
+                    newItems[index].price = basePrice;
+                } else {
+                    newItems[index].price = 0;
+                }
+
+                newItems[index].quantity = quantity;
+            }
+
+            const newTotal = newItems.reduce(
+                (sum, item) => sum + (item.price * item.quantity) + item.attachments.reduce((attSum, att) => attSum + att.price, 0),
                 0
-            ),
-        })
-    }
+            );
+
+            return {
+                ...prev,
+                items: newItems,
+                total: newTotal,
+            };
+        });
+    };
 
     const handleOpenChange = (index: number, isOpen: boolean) => {
         setOpenStates(prev => ({
@@ -204,6 +221,20 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
             [index]: isOpen
         }));
     };
+
+    const handleClientSelection = (clientId: string) => {
+        if (clientId !== props.newInvoice.clientId) {
+            props.setNewInvoice(prev => ({
+                ...prev,
+                clientId: clientId,
+            }))
+            // Calculate client's debt
+            const clientDebt = props.invoices
+                .filter(invoice => invoice.clientId === clientId && invoice.status !== 'Cancelada' && invoice.pendingBalance > 0)
+                .reduce((total, invoice) => total + invoice.pendingBalance, 0)
+            setSelectedClientDebt(clientDebt)
+        }
+    }
 
     return (
         <>
@@ -223,6 +254,27 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                         }}
                         className="space-y-6"
                     >
+                        {props.newInvoice.clientId && (
+                            <div className="mb-4">
+                                {selectedClientDebt > 0 ? (
+                                    <Alert variant="destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertTitle>Advertencia</AlertTitle>
+                                        <AlertDescription>
+                                            Este cliente tiene una deuda pendiente de ${selectedClientDebt.toFixed(2)}.
+                                        </AlertDescription>
+                                    </Alert>
+                                ) : (
+                                    <Alert variant="default">
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        <AlertTitle>Cliente seleccionado</AlertTitle>
+                                        <AlertDescription>
+                                            El cliente ha sido seleccionado correctamente.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </div>
+                        )}
                         <div className="grid gap-6">
                             {/* Cliente Filter */}
                             <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
@@ -260,12 +312,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                 </Label>
                                 <Select
                                     value={props.newInvoice.clientId}
-                                    onValueChange={(value) =>
-                                        props.setNewInvoice({
-                                            ...props.newInvoice,
-                                            clientId: value,
-                                        })
-                                    }
+                                    onValueChange={handleClientSelection}
                                 >
                                     <SelectTrigger className="col-span-2">
                                         <SelectValue placeholder="Seleccione un cliente" />
@@ -278,8 +325,9 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <Button variant="outline" type="button" onClick={() => setIsNewClientDialogOpen(true)}>
+                                <Button variant="outline" type="button" onClick={() => console.log("Add new client functionality to be implemented")}>
                                     <Plus className="h-4 w-4 mr-2" />
+                                    Nuevo Cliente
                                 </Button>
                             </div>
 
@@ -307,7 +355,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                     </TableHeader>
                                     <TableBody>
                                         {props.newInvoice.items.map((item, index) => (
-                                            <TableRow key={index}>
+                                            <TableRow key={`${index}-${item.productId}-${item.garmentTypeId}`}>
                                                 <TableCell>
                                                     <Select
                                                         value={item.productId}
@@ -343,9 +391,8 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                                                             <CommandItem
                                                                                 key={type.id}
                                                                                 onSelect={() => {
-                                                                                    const garmentTypeId = type.id || ""
-                                                                                    handleProductChange(index, 'garmentTypeId', garmentTypeId)
-                                                                                    handleOpenChange(index, false)
+                                                                                    handleProductChange(index, 'garmentTypeId', type.id || "");
+                                                                                    handleOpenChange(index, false);
                                                                                 }}
                                                                                 className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
                                                                             >
@@ -361,11 +408,11 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                                     <Input
                                                         type="number"
                                                         value={item.quantity}
-                                                        onChange={(e) => handleProductChange(index, 'quantity', parseInt(e.target.value))}
+                                                        onChange={(e) => handleProductChange(index, 'quantity', parseInt(e.target.value) || 1)}
                                                         min={1}
                                                     />
                                                 </TableCell>
-                                                <TableCell>${item.price}</TableCell>
+                                                <TableCell>${item.price.toFixed(2)}</TableCell>
                                                 <TableCell>
                                                     {item.attachments.map((attachment, attIndex) => (
                                                         <div key={attachment.id} className="flex items-center space-x-2 mb-2">
@@ -401,7 +448,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                                     </Button>
                                                 </TableCell>
                                                 <TableCell>
-                                                    ${item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0)}
+                                                    ${((item.price * item.quantity) + item.attachments.reduce((sum, att) => sum + att.price, 0)).toFixed(2)}
                                                 </TableCell>
                                                 <TableCell>
                                                     <Button
@@ -590,86 +637,6 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                     </Dialog>
                 )}
             </AnimatePresence>
-
-            <Dialog open={isNewClientDialogOpen} onOpenChange={setIsNewClientDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold">Crear Nuevo Cliente</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={(e) => {
-                        e.preventDefault()
-                        handleCreateNewClient()
-                    }}
-                        className="space-y-4"
-                    >
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Nombre</Label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                    id="name"
-                                    value={newClient.name}
-                                    onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
-                                    className="pl-10"
-                                    placeholder="Nombre completo"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={newClient.email}
-                                    onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
-                                    className="pl-10"
-                                    placeholder="correo@ejemplo.com"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="phone">Teléfono</Label>
-                            <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                    id="phone"
-                                    value={newClient.phone}
-                                    onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                                    className="pl-10"
-                                    placeholder="123-456-7890"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="cedula">Cédula</Label>
-                            <div className="relative">
-                                <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                    id="cedula"
-                                    value={newClient.cedula}
-                                    onChange={(e) => setNewClient({ ...newClient, cedula: e.target.value })}
-                                    className="pl-10"
-                                    placeholder="1234567890"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="direccion">Dirección</Label>
-                            <Textarea
-                                id="direccion"
-                                value={newClient.direccion}
-                                onChange={(e) => setNewClient({ ...newClient, direccion: e.target.value })}
-                                placeholder="Ingrese la dirección del cliente"
-                            />
-                        </div>
-                        <DialogFooter>
-                            <Button type="submit">Crear Cliente</Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
         </>
     )
 }

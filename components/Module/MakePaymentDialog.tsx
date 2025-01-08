@@ -26,6 +26,8 @@ export default function MakePaymentDialog({
         confirmMakePayment(paymentAmount)
     }
 
+    console.log(invoiceToMakePayment)
+
     return (
         <Dialog open={isMakePaymentDialogOpen} onOpenChange={setIsMakePaymentDialogOpen}>
             <DialogContent className="sm:max-w-[425px]">

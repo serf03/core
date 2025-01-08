@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "typeRoots": [
+      "./types",
+      "./node_modules/@types"
+    ],
     "lib": [
       "dom",
       "dom.iterable",
@@ -25,7 +29,9 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "target": "ES2017",
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "next-env.d.ts",
@@ -33,6 +39,8 @@
     "**/*.tsx",
     "**/*.jsx",
     ".next/types/**/*.ts",
+    "global.d.ts",
+    "types/**/*.d.ts", // Añadir esto para incluir la carpeta `types` si creas una
     "components/Module/EditClientsDialog.jsx",
     "components/Module/EditProductDialog.jsx",
     "components/Module/InvoicePreviewDialog.jsx",

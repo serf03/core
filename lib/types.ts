@@ -18,6 +18,11 @@ interface User {
     idAdministrador: string;
 }
 
+interface PaymentOption {
+    value: 'cash' | 'card' | 'pending';
+    label: string;
+}
+
 interface Client {
     id?: string; // Propiedad requerida
     name: string;
@@ -27,6 +32,12 @@ interface Client {
     direccion: string; // Asegúrate de que este nombre coincida
     idAdministrador: string;
     active?: boolean; // Esta propiedad también puede ser requerida
+}
+
+
+interface OptionType {
+    value: "cedula" | "phone";
+    label: string;
 }
 
 interface Product {
@@ -87,7 +98,7 @@ interface InvoiceDetail {
     client: string
     items: InvoiceItemDetails[]
     total: number
-    status: 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada'
+    status: 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada' | 'Parcialmente Pagada'
     date: string
     pickupDate: string
     color: string
@@ -122,5 +133,5 @@ interface TabsFacturacionProps {
     handleMakePayment: (invoice: Invoice) => void;
 }
 
-export type { Attachment, Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole };
+export type { Attachment, Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, OptionType, PaymentOption, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole };
 
