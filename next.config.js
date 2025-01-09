@@ -1,5 +1,13 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+    reactStrictMode: true,
+    webpack: (config) => {
+        config.resolve.alias = {
+            ...config.resolve.alias,
+            react: require.resolve('react'),
+        };
+        return config;
+    },
+};
 
-module.exports = nextConfig
-
+module.exports = nextConfig;
