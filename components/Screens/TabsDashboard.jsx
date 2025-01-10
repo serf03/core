@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { DollarSign, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { TabsContent } from "../ui/tabs";
-
+import React from "react"
 function TabsDashboard(props) {
     return (
         <TabsContent value="dashboard" className="space-y-4">

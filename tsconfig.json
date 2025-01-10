@@ -1,14 +1,6 @@
 {
   "compilerOptions": {
-    "typeRoots": [
-      "./types",
-      "./node_modules/@types"
-    ],
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -26,36 +18,9 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
-    "target": "ES2017",
-    "forceConsistentCasingInFileNames": true
+      "@/*": ["./*"]
+    }
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.jsx",
-    ".next/types/**/*.ts",
-    "global.d.ts",
-    "types/**/*.d.ts", // Añadir esto para incluir la carpeta `types` si creas una
-    "components/Module/EditClientsDialog.jsx",
-    "components/Module/EditProductDialog.jsx",
-    "components/Module/InvoicePreviewDialog.jsx",
-    "components/Module/StateInvoiceDialog.jsx",
-    "components/Module/NewProductDialog.tsx",
-    "components/Module/MainContent.jsx",
-    "components/Screens/TabsUsuario.jsx",
-    "components/Screens/TabsReport.jsx",
-    "components/Screens/TabsProduction.tsx",
-    "components/Screens/TabsFacturacion.tsx",
-    "components/Screens/TabsDashboard.jsx",
-    "components/Screens/TabsClients.tsx",
-    "components/Module/InvoiceReceiptDialog.jsx"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

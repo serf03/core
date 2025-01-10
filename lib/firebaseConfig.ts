@@ -4,12 +4,12 @@ import { getFirestore } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyBtnqnaUmpbzXCZw_v-fC1qNj9qqQ6vDMQ",
-    authDomain: "lavanderia-619c8.firebaseapp.com",
-    projectId: "lavanderia-619c8",
-    storageBucket: "lavanderia-619c8.appspot.com",
-    messagingSenderId: "922087279639",
-    appId: "1:922087279639:web:f07f3f4991b4b5cf876052"
+    apiKey: "AIzaSyA5-pN2or9nYK-KdQkS8ct6RbVZT5EbE3Q",
+    authDomain: "quickclear-56b83.firebaseapp.com",
+    projectId: "quickclear-56b83",
+    storageBucket: "quickclear-56b83.appspot.com",
+    messagingSenderId: "725911095171",
+    appId: "1:725911095171:web:7e795c5a731180000958b6"
 };
 
 const app = initializeApp(firebaseConfig);
