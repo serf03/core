@@ -13,6 +13,9 @@ function StateFacturaDialog(props) {
         }
     };
 
+
+    console.log(props);
+
     return (
         <Dialog open={props.isChangeInvoiceStatusDialogOpen} onOpenChange={props.setIsChangeInvoiceStatusDialogOpen}>
             <DialogContent>
@@ -37,6 +40,7 @@ function StateFacturaDialog(props) {
                                     <SelectItem value="Completada">Completada</SelectItem>
                                     <SelectItem value="Entregada">Entregada</SelectItem>
                                     <SelectItem value="Cancelada">Cancelada</SelectItem>
+                                    <SelectItem value="Parcialmente Pagada">Parcialmente Pagada</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

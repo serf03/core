@@ -120,31 +120,49 @@ export function System() {
   const [invoiceToMakePayment, setInvoiceToMakePayment] = useState<Invoice | null>(null)
 
   useEffect(() => {
-    setIsAddUserDialogOpen(false);
-    const unsubscribeInvoices = firebaseServices.subscribeToInvoices(setInvoices)
-    return () => {
-      unsubscribeInvoices()
-    }
+    (async () => {
+
+
+      setIsAddUserDialogOpen(false);
+      const unsubscribeInvoices = await firebaseServices.subscribeToInvoices(setInvoices)
+      return  () => {
+         unsubscribeInvoices()
+      }
+
+    })();
+
   }, [])
 
   // Efecto para cargar datos iniciales y suscribirse a cambios
   useEffect(() => {
-    const unsubscribeUsers = firebaseServices.subscribeToUsers(setUsers)
-    const unsubscribeClients = firebaseServices.subscribeToClients(setClients)
-    const unsubscribeProducts = firebaseServices.subscribeToProducts(setProducts)
-    const unsubscribeGarmentTypes = firebaseServices.subscribeToGarmentTypes(setGarmentTypes)
-    const unsubscribeInvoices = firebaseServices.subscribeToInvoices(setInvoices)
-    const unsubscribeProductionRecords = firebaseServices.subscribeToProductionRecords(setProductionRecords)
 
-    // Limpiar suscripciones
-    return () => {
-      unsubscribeUsers()
-      unsubscribeClients()
-      unsubscribeProducts()
-      unsubscribeGarmentTypes()
-      unsubscribeInvoices()
-      unsubscribeProductionRecords()
-    }
+
+    (async () => {
+
+
+      const unsubscribeUsers = await firebaseServices.subscribeToUsers(setUsers)
+      const unsubscribeClients = await firebaseServices.subscribeToClients(setClients)
+      const unsubscribeProducts = await firebaseServices.subscribeToProducts(setProducts)
+      const unsubscribeGarmentTypes = await firebaseServices.subscribeToGarmentTypes(setGarmentTypes)
+      const unsubscribeInvoices = await firebaseServices.subscribeToInvoices(setInvoices)
+      const unsubscribeProductionRecords = await firebaseServices.subscribeToProductionRecords(setProductionRecords)
+  
+      // Limpiar suscripciones
+      return () => {
+        unsubscribeUsers()
+        unsubscribeClients()
+        unsubscribeProducts()
+        unsubscribeGarmentTypes()
+        unsubscribeInvoices()
+        unsubscribeProductionRecords()
+      }
+
+    })();
+
+
+
+
+
   }, [])
 
   // Efecto para calcular producción diaria

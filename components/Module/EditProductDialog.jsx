@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Activity, Clock, DollarSign, Package } from "lucide-react"
 
 function EditProductDialog(props) {
+
   return (
     <Dialog open={props.isEditProductDialogOpen} onOpenChange={props.setIsEditProductDialogOpen}>
       <DialogContent className="sm:max-w-[500px]">

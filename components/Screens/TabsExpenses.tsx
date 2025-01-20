@@ -71,10 +71,12 @@ export default function TabsExpenses() {
     })
 
     useEffect(() => {
-        const unsubscribe = subscribeToExpenses((updatedExpenses) => {
-            setExpenses(updatedExpenses)
-        })
-        return () => unsubscribe()
+        (async () => {
+            const unsubscribe = await subscribeToExpenses((updatedExpenses) => {
+                setExpenses(updatedExpenses)
+            })
+            return () => unsubscribe();
+        })()
     }, [])
 
     const onSubmit = async (values: z.infer<typeof expenseSchema>) => {

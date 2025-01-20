@@ -325,27 +325,24 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <Button variant="outline" type="button" onClick={() => console.log("Add new client functionality to be implemented")}>
+                                {/* <Button variant="outline" type="button" onClick={() => console.log("Add new client functionality to be implemented")}>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Nuevo Cliente
-                                </Button>
+                                </Button> */}
                             </div>
 
                             {/* Agregar Producto Button */}
                             <div className="flex justify-end">
                                 <Button type="button" onClick={handleAddProduct}>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Agregar Producto
                                 </Button>
                             </div>
-
                             {/* Invoice Items Table */}
                             <div className="col-span-4 overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Producto</TableHead>
-                                            <TableHead>Tipo de Prenda</TableHead>
+                                            <TableHead>Servicio</TableHead>
+                                            <TableHead>Prenda</TableHead>
                                             <TableHead>Cantidad</TableHead>
                                             <TableHead>Precio</TableHead>
                                             <TableHead>Attachments</TableHead>
@@ -441,6 +438,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
+                                                        disabled
                                                         onClick={() => handleAddAttachment(index)}
                                                     >
                                                         <Plus className="h-4 w-4 mr-2" />

@@ -132,6 +132,15 @@ interface TabsFacturacionProps {
     handleCancelInvoice: (invoice: Invoice) => void;
     handleMakePayment: (invoice: Invoice) => void;
 }
-
-export type { Attachment, Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, OptionType, PaymentOption, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole };
+interface UserFirebaseConfig {
+    apiKey: string
+    authDomain: string
+    projectId: string
+    storageBucket: string
+    messagingSenderId: string
+    appId: string,
+    measurementId: string,
+    userId: string
+  }
+export type { UserFirebaseConfig, Attachment, Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, OptionType, PaymentOption, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole };
 
