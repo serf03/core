@@ -5,7 +5,6 @@ import { ResumenIngresos } from "./resumen-ingresos"
 import { IngresoDenominaciones } from "./ingreso-denominaciones"
 import { ComparacionIngresos } from "./comparacion-ingresos"
 import { ConfirmacionCierre } from "./confirmacion-cierre"
-import { Button } from "@/components/ui/button"
 
 // Tipos
 type Ingreso = {

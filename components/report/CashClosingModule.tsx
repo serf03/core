@@ -10,9 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { getUserFirebaseInstances } from "@/lib/userFirebase"
 import { collection, query, where, getDocs, addDoc} from "firebase/firestore"
 import { useToast } from "@/components/ui/use-toast"
-import { jsPDF } from "jspdf"
 import "jspdf-autotable"
-import * as XLSX from "xlsx"
 
 interface Denomination {
   value: number
@@ -165,7 +163,7 @@ const CashClosingModule: React.FC = () => {
         title: "Cierre de caja exitoso",
         description: `Ingresos: $${cashCounted.toFixed(2)}, Gastos: $${expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}, Balance: $${totalGeneral.toFixed(2)}`,
       })
-      generateReport(closingData)
+      // generateReport(closingData)
     } catch (error) {
       console.error("Error al cerrar la caja:", error)
       toast({
@@ -176,39 +174,39 @@ const CashClosingModule: React.FC = () => {
     }
   }
 
-  const generateReport = (data: CashClosing) => {
-    // Generate PDF report
-    const doc = new jsPDF()
-    doc.text("Reporte de Cierre de Caja", 14, 15)
-    doc.autoTable({
-      head: [["Concepto", "Monto"]],
-      body: [
-        ["Monto Inicial", `$${data.initialAmount.toFixed(2)}`],
-        ["Efectivo Contado", `$${data.cashCounted.toFixed(2)}`],
-        ["Cuentas por Cobrar", `$${data.accountsReceivable.toFixed(2)}`],
-        ["Gastos", `$${data.expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}`],
-        ["Saldo Esperado", `$${data.expectedBalance.toFixed(2)}`],
-        ["Diferencia", `$${data.difference.toFixed(2)}`],
-        ["Total General", `$${data.totalGeneral.toFixed(2)}`],
-      ],
-    })
-    doc.text(`Notas: ${data.notes}`, 14, doc.lastAutoTable.finalY + 10)
-    doc.save("cierre_de_caja.pdf")
+  // const generateReport = (data: CashClosing) => {
+  //   // Generate PDF report
+  //   const doc = new jsPDF()
+  //   doc.text("Reporte de Cierre de Caja", 14, 15)
+  //   doc.autoTable({
+  //     head: [["Concepto", "Monto"]],
+  //     body: [
+  //       ["Monto Inicial", `$${data.initialAmount.toFixed(2)}`],
+  //       ["Efectivo Contado", `$${data.cashCounted.toFixed(2)}`],
+  //       ["Cuentas por Cobrar", `$${data.accountsReceivable.toFixed(2)}`],
+  //       ["Gastos", `$${data.expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}`],
+  //       ["Saldo Esperado", `$${data.expectedBalance.toFixed(2)}`],
+  //       ["Diferencia", `$${data.difference.toFixed(2)}`],
+  //       ["Total General", `$${data.totalGeneral.toFixed(2)}`],
+  //     ],
+  //   })
+  //   doc.text(`Notas: ${data.notes}`, 14, doc.lastAutoTable.finalY + 10)
+  //   doc.save("cierre_de_caja.pdf")
 
-    // Generate Excel report
-    const ws = XLSX.utils.json_to_sheet([
-      { Concepto: "Monto Inicial", Monto: data.initialAmount },
-      { Concepto: "Efectivo Contado", Monto: data.cashCounted },
-      { Concepto: "Cuentas por Cobrar", Monto: data.accountsReceivable },
-      { Concepto: "Gastos", Monto: data.expenses.reduce((sum, e) => sum + e.amount, 0) },
-      { Concepto: "Saldo Esperado", Monto: data.expectedBalance },
-      { Concepto: "Diferencia", Monto: data.difference },
-      { Concepto: "Total General", Monto: data.totalGeneral },
-    ])
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Cierre de Caja")
-    XLSX.writeFile(wb, "cierre_de_caja.xlsx")
-  }
+  //   // Generate Excel report
+  //   const ws = XLSX.utils.json_to_sheet([
+  //     { Concepto: "Monto Inicial", Monto: data.initialAmount },
+  //     { Concepto: "Efectivo Contado", Monto: data.cashCounted },
+  //     { Concepto: "Cuentas por Cobrar", Monto: data.accountsReceivable },
+  //     { Concepto: "Gastos", Monto: data.expenses.reduce((sum, e) => sum + e.amount, 0) },
+  //     { Concepto: "Saldo Esperado", Monto: data.expectedBalance },
+  //     { Concepto: "Diferencia", Monto: data.difference },
+  //     { Concepto: "Total General", Monto: data.totalGeneral },
+  //   ])
+  //   const wb = XLSX.utils.book_new()
+  //   XLSX.utils.book_append_sheet(wb, ws, "Cierre de Caja")
+  //   XLSX.writeFile(wb, "cierre_de_caja.xlsx")
+  // }
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
