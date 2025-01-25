@@ -23,11 +23,24 @@ function getAvatarColor(name: string) {
     const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
     return colors[index];
 }
+const statusPriority = {
+    'En Proceso': 0,
+    'Pendiente': 1,
+    'Parcialmente Pagada': 2,
+    'Completada': 3,
+    'Entregada': 4,
+    'Cancelada': 5,
+    "Lavando": 6,
+    "Planchando": 7,
+    "Finalizado": 8,
+    "InvoiceDetail": 9
+};
 
 function TabsFacturacion(props: TabsFacturacionProps) {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     const renderInvoiceItem = (invoice: Invoice) => {
+        console.log(invoice)
         const client = props.clients.find(c => c.id === invoice.clientId);
         return (
             <Card key={invoice.id} className="mb-4">
@@ -60,7 +73,7 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                 props.setInvoiceToChangeStatus(invoice);
                                 props.setIsChangeInvoiceStatusDialogOpen(true);
                             }}
-                            disabled={invoice.status === 'Entregada' || invoice.status === 'Cancelada'}
+                            disabled={invoice.status === 'Entregada' || invoice.status === 'Cancelada' || invoice.status === 'Finalizado'}
                             size="sm"
                         >
                             Cambiar Estado
@@ -75,6 +88,13 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                             size="sm"
                         >
                             Abonar
+                        </Button>
+                        <Button
+                            onClick={() => props.handleFinalizadoInvoice(invoice)}
+                            disabled={invoice.status === 'Finalizado' || invoice.status === 'Entregada' || invoice.status === 'Cancelada'}
+                            size="sm"
+                        >
+                            Finalizar
                         </Button>
                         {invoice.status !== 'Cancelada' && (
                             <Button
@@ -143,22 +163,20 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                         .filter(
                                             invoice =>
                                                 invoice.id.toString().includes(props.searchTerm) ||
+                                            invoice.invoiceNumber.toString().includes(props.searchTerm) ||
+                                            invoice.status.toString().includes(props.searchTerm) ||
                                                 props.clients.find(c => c.id === invoice.clientId)?.name
+                                                    .toLowerCase()
+                                                    .includes(props.searchTerm.toLowerCase()) ||
+                                                    props.clients.find(c => c.id === invoice.clientId)?.phone
+                                                    .toLowerCase()
+                                                    .includes(props.searchTerm.toLowerCase()) ||
+                                                    props.clients.find(c => c.id === invoice.clientId)?.cedula
                                                     .toLowerCase()
                                                     .includes(props.searchTerm.toLowerCase())
                                         )
                                         .sort((a, b) => {
-                                            // First, sort by status priority
-                                            const statusPriority = {
-                                                'En Proceso': 0,
-                                                'Pendiente': 1,
-                                                'Parcialmente Pagada': 2,
-                                                'Completada': 3,
-                                                'Entregada': 4,
-                                                'Cancelada': 5,
-                                                "Lavando": 6,
-                                                "Planchando": 7
-                                            };
+                              
 
                                             const statusDiff = (statusPriority[a.status] || 0) - (statusPriority[b.status] || 0);
                                             if (statusDiff !== 0) return statusDiff;
@@ -191,25 +209,24 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                         </TableHeader>
                                         <TableBody>
                                             {props.invoices
-                                                .filter(
-                                                    invoice =>
-                                                        invoice.id.toString().includes(props.searchTerm) ||
-                                                        props.clients.find(c => c.id === invoice.clientId)?.name
-                                                            .toLowerCase()
-                                                            .includes(props.searchTerm.toLowerCase())
-                                                )
+                                                        .filter(
+                                                            invoice =>
+                                                                invoice.id.toString().includes(props.searchTerm) ||
+                                                            invoice.invoiceNumber.toString().includes(props.searchTerm) ||
+                                                            invoice.status.toString().includes(props.searchTerm) ||
+                                                                props.clients.find(c => c.id === invoice.clientId)?.name
+                                                                    .toLowerCase()
+                                                                    .includes(props.searchTerm.toLowerCase()) ||
+                                                                    props.clients.find(c => c.id === invoice.clientId)?.phone
+                                                                    .toLowerCase()
+                                                                    .includes(props.searchTerm.toLowerCase()) ||
+                                                                    props.clients.find(c => c.id === invoice.clientId)?.cedula
+                                                                    .toLowerCase()
+                                                                    .includes(props.searchTerm.toLowerCase())
+                                                        )
                                                 .sort((a, b) => {
                                                     // First, sort by status priority
-                                                    const statusPriority = {
-                                                        'En Proceso': 0,
-                                                        'Pendiente': 1,
-                                                        'Parcialmente Pagada': 2,
-                                                        'Completada': 3,
-                                                        'Entregada': 4,
-                                                        'Cancelada': 5,
-                                                        "Lavando": 6,
-                                                        "Planchando": 7
-                                                    };
+                           
 
                                                     const statusDiff = (statusPriority[a.status] || 0) - (statusPriority[b.status] || 0);
                                                     if (statusDiff !== 0) return statusDiff;
@@ -275,6 +292,13 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                                     disabled={invoice.status === 'Cancelada' || invoice.pendingBalance === 0}
                                                                 >
                                                                     Abonar
+                                                                </Button>
+                                                                <Button
+                                                                    onClick={() => props.handleFinalizadoInvoice(invoice)}
+                                                                    disabled={invoice.status === 'Finalizado' || invoice.status === 'Entregada' || invoice.status === 'Cancelada'}
+                                                                    size="sm"
+                                                                >
+                                                                    Finalizar
                                                                 </Button>
                                                                 {invoice.status !== 'Cancelada' && (
                                                                     <Button

@@ -8,6 +8,7 @@ interface Expense {
 
 // Definición de tipos
 type UserRole = 'Administrador' | 'Facturador' | 'Operador' | 'Cliente'
+type InvoiceStatus = 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada' | 'Parcialmente Pagada' | 'Finalizado' | 'InvoiceDetail'
 
 interface User {
     id?: string
@@ -77,7 +78,7 @@ interface Invoice {
     clientId: string
     items: InvoiceItem[]
     total: number
-    status: 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada' | 'Parcialmente Pagada'
+    status: InvoiceStatus
     date: string
     pickupDate: string
     color: string
@@ -98,7 +99,7 @@ interface InvoiceDetail {
     client: string
     items: InvoiceItemDetails[]
     total: number
-    status: 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada' | 'Parcialmente Pagada'
+    status:InvoiceStatus
     date: string
     pickupDate: string
     color: string
@@ -131,6 +132,7 @@ interface TabsFacturacionProps {
     handlePrintInvoice: (invoice: Invoice) => void;
     handleCancelInvoice: (invoice: Invoice) => void;
     handleMakePayment: (invoice: Invoice) => void;
+    handleFinalizadoInvoice: (invoice: Invoice) => void;
 }
 interface UserFirebaseConfig {
     apiKey: string

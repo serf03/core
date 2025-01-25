@@ -21,6 +21,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "components/Screens/TabsReport.jsx", "components/Screens/TabsReport.jsx", "components/Screens/TabsReport.jsx", "components/report/DashboardReport.jsx", "components/report/DashboardReport.jsx"],
   "exclude": ["node_modules"]
 }

@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from "./ui/dialog"
 
 import { addDays, addMinutes, format, setHours, setMinutes } from 'date-fns'
 import { AnimatePresence, motion } from 'framer-motion'
-import { BarChart, Bell, Edit, FileText, HelpCircle, LayoutDashboard, LogOut, NotebookPen, Package, Plus, Search, Settings, Shirt, Trash, Users } from 'lucide-react'
+import {Bell, Edit, FileText, HelpCircle, LayoutDashboard, LogOut, NotebookPen, Package, Plus, RouteOff, Search, Settings, Shirt, Trash, Users } from 'lucide-react'
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { toast, Toaster } from 'react-hot-toast'
 import * as firebaseServices from "../lib/firebaseServices"
@@ -22,7 +22,7 @@ import { Tabs, TabsContent } from "./ui/tabs"
 
 // Lazy imports for tab components
 const TabsClients = lazy(() => import("./Screens/TabsClients"))
-const TabsDashboard = lazy(() => import("./Screens/TabsDashboard"))
+// const TabsDashboard = lazy(() => import("./Screens/TabsDashboard"))
 const TabsFacturacion = lazy(() => import("./Screens/TabsFacturacion"))
 const TabsNewPrenda = lazy(() => import("./Screens/TabsNewPrenda"))
 const TabsProducts = lazy(() => import("./Screens/TabsProducts"))
@@ -51,6 +51,8 @@ import AddUserDialog from "./Module/AddUserDialog"
 import MakePaymentDialog from "./Module/MakePaymentDialog"
 import TabsExpenses from "./Screens/TabsExpenses"
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+import AlertGenerico from "./Module/AlertGenerico"
+import TabCierreCaja from "./Screens/TabCierreCaja"
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -69,7 +71,7 @@ export function System() {
   const { user, logout } = useAuth();
   // Estados
   const [newUser, setNewUser] = useState<User>({ name: '', email: '', clave: '', role: "Facturador", idAdministrador: user?.uid || '' })
-  const [activeTab, setActiveTab] = useState("dashboard")
+  const [activeTab, setActiveTab] = useState("reports")
   const [users, setUsers] = useState<User[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -99,6 +101,8 @@ export function System() {
   const [clientFilter, setClientFilter] = useState('')
   const [clientFilterType, setClientFilterType] = useState<'cedula' | 'phone'>('cedula')
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
+  const [isFinalizadoDialogOpen, setIsFinalizadoDialogOpen] = useState(false)
+  const [invoiceToFinalizado, setInvoiceToFinalizado] = useState<Invoice | null>(null)
   const [invoiceToCancel, setInvoiceToCancel] = useState<Invoice | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [editingClient, setEditingClient] = useState<Client | null>(null)
@@ -135,6 +139,7 @@ export function System() {
 
   // Efecto para cargar datos iniciales y suscribirse a cambios
   useEffect(() => {
+console.log(dailyProduction);
 
 
     (async () => {
@@ -194,7 +199,7 @@ export function System() {
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.phone.includes(searchTerm) ||
-      client.cedula.includes(searchTerm)
+      client.cedula.includes(searchTerm) 
     )
   }, [clients, searchTerm])
 
@@ -506,6 +511,27 @@ export function System() {
     setIsCancelDialogOpen(true)
   }
 
+  const handleFinalizadoInvoice = (invoice: Invoice) => {
+    setInvoiceToFinalizado(invoice)
+    setIsFinalizadoDialogOpen(true)
+  }
+  const confirmFinalizadoInvoice = async () => {
+    if (invoiceToFinalizado) {
+      try {
+        const finalizadoInvoice: Invoice = {
+          ...invoiceToFinalizado,
+          status: 'Finalizado',
+        }
+        await firebaseServices.updateInvoice(finalizadoInvoice)
+        setIsCancelDialogOpen(false)
+        setInvoiceToCancel(null)
+        toast.success('Factura cancelada exitosamente')
+      } catch (error) {
+        console.error("Error cancelling invoice: ", error)
+        toast.error("Error al cancelar la factura")
+      }
+    }
+  }
   const confirmCancelInvoice = async () => {
     if (invoiceToCancel) {
       try {
@@ -581,7 +607,8 @@ export function System() {
         </div>
         <nav className="mt-6">
           {[
-            { name: "Dashboard", icon: <LayoutDashboard size={20} />, id: "dashboard" },
+            { name: "Dashboard", icon: <LayoutDashboard size={20} />, id: "reports" },
+            // { name: "Reportes", icon: <BarChart size={20} />, id: "reports" },
             { name: "Facturación", icon: <FileText size={20} />, id: "billing" },
             { name: "Usuarios", icon: <Users size={20} />, id: "users" },
             { name: "Clientes", icon: <Users size={20} />, id: "clients" },
@@ -590,7 +617,7 @@ export function System() {
             },
             { name: "Tipos de Prendas", icon: <Shirt size={20} />, id: "garmentTypes" },
             { name: "Gasto", icon: <NotebookPen size={20} />, id: "expenses" },
-            { name: "Reportes", icon: <BarChart size={20} />, id: "reports" },
+            { name: "Cierre Caja", icon: <RouteOff  size={20} />, id: "cierre" },
           ].map((item) => (
             <Button
               key={item.id}
@@ -674,9 +701,10 @@ export function System() {
             >
               <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
                 <Suspense fallback={<div>Cargando...</div>}>
-                  {activeTab === "dashboard" && (
-                    <TabsContent value="dashboard">
-                      <TabsDashboard products={products} invoices={invoices} dailyProduction={dailyProduction} />
+                  {activeTab === "reports" && (
+                    <TabsContent value="reports">
+                      {/* <TabsDashboard products={products} invoices={invoices} dailyProduction={dailyProduction} /> */}
+                      <TabsReport invoices={invoices} client={clients}/>
                     </TabsContent>
                   )}
                   {activeTab === "billing" && (
@@ -692,6 +720,7 @@ export function System() {
                         handlePrintInvoice={handlePrintInvoice}
                         handleCancelInvoice={handleCancelInvoice}
                         handleMakePayment={handleMakePayment}
+                        handleFinalizadoInvoice={handleFinalizadoInvoice}
                       />
                     </TabsContent>
                   )}
@@ -799,11 +828,12 @@ export function System() {
                       </Card>
                     </TabsContent>
                   )}
-                  {activeTab === "reports" && (
-                    <TabsContent value="reports">
-                      <TabsReport />
+                  {activeTab === "cierre" && (
+                    <TabsContent value="cierre">
+                      <TabCierreCaja/>
                     </TabsContent>
                   )}
+         
                   {activeTab === "expenses" && (
                     <TabsContent value="expenses">
                       <TabsExpenses />
@@ -908,6 +938,15 @@ export function System() {
           isCancelDialogOpen={isCancelDialogOpen}
           setIsCancelDialogOpen={setIsCancelDialogOpen}
           confirmCancelInvoice={confirmCancelInvoice}
+        />
+      )}
+      {isFinalizadoDialogOpen && (
+        <AlertGenerico
+          isCancelDialogOpen={isFinalizadoDialogOpen}
+          setIsCancelDialogOpen={setIsFinalizadoDialogOpen}
+          confirmInvoice={confirmFinalizadoInvoice}
+          Title="¿Está seguro de que desea marcar esta factura como finalizada?"
+          Description="Esta acción no se puede deshacer. La factura se marcará como finalizada y no se podrá procesar el pago."
         />
       )}
 
