@@ -83,8 +83,16 @@ export default function TabCierreCaja() {
   const cargarCuentasPorCobrar = async () => {
     try {
       const { db } = await getUserFirebaseInstances()
-      const invoicesQuery = query(collection(db, "invoices"), where("pendingBalance", ">", 0))
+
+      // 👇 Nueva consulta combinando idAdministrador y pendingBalance
+      const invoicesQuery = query(collection(db, "invoices"), where("idAdministrador", "==", localStorage.getItem("uid")), where("pendingBalance", ">", 0))
+
+        console.log(invoicesQuery);
+        
+
       const invoicesSnapshot = await getDocs(invoicesQuery)
+
+
       const invoices: Invoice[] = invoicesSnapshot.docs.map((doc) => ({
         id: doc.id,
         clientId: doc.data().clientId,

@@ -11,28 +11,11 @@ const DashboardReport = (props) => {
   const [clients, setClients] = useState([])
 
     useEffect(() => {
-      const fetchData = async () => {
-        try {
 
-
-          const invoicesQuery = props.invoices;
-          console.log(invoicesQuery)
-
-          setInvoices(invoicesQuery);
+      setInvoices(props.invoices);
+      setClients(props.client);
     
-
-          const clientsQuery = props.clients;
-
-          console.log(clientsQuery)
-          setClients(clientsQuery);
-
-        } catch (error) {
-          console.error("Error fetching data:", error);
-        }
-      };
-    
-      fetchData();
-    }, [props.invoices, props.clients]);
+    }, [clients, props.client, props.invoices]);
     
 
   return (
@@ -43,7 +26,7 @@ const DashboardReport = (props) => {
         <DailyIncomeChart invoices={invoices} />
         <CashClosing />
       </div>
-      <ClientStatistics invoices={invoices} clients={clients} />
+      <ClientStatistics invoices={invoices} client={props.client} />
       <ExportReport invoices={invoices} />
       <TabsReport invoices={invoices} />
     </div>

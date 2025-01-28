@@ -1,93 +1,137 @@
-import { useEffect } from 'react'
-import React, { useState } from "react"
+import React, { useState, useMemo, useCallback } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { format } from "date-fns"
+import { Button } from "@/components/ui/button"
+import { format, parse } from "date-fns"
+import { es } from "date-fns/locale"
+
+const ITEMS_PER_PAGE = 10
 
 const TabsReport = ({ invoices }) => {
-  const [filteredInvoices, setFilteredInvoices] = useState(invoices)
   const [filter, setFilter] = useState({
     client: "",
     status: "",
-    date: format(new Date(), "yyyy-MM-dd"),
+    date: "",
+    invoiceNumber: "",
   })
+  const [currentPage, setCurrentPage] = useState(1)
 
-  const handleFilterChange = (key, value) => {
-    const newFilter = { ...filter, [key]: value }
-    setFilter(newFilter)
+  const handleFilterChange = useCallback((key, value) => {
+    setFilter((prev) => ({ ...prev, [key]: value }))
+    setCurrentPage(1)
+  }, [])
 
-    const filtered = invoices.filter(
-      (invoice) =>
-        (newFilter.client === "" || invoice.clientId.toLowerCase().includes(newFilter.client.toLowerCase())) &&
-        (newFilter.status === "" || invoice.status === newFilter.status) &&
-        (newFilter.date === "" || invoice.date === newFilter.date),
-    )
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((invoice) => {
+      const clientMatch =
+        filter.client === "" ||
+        (invoice.clientId && invoice.clientId.toLowerCase().includes(filter.client.toLowerCase()))
 
-    setFilteredInvoices(filtered)
+      const statusMatch =
+        filter.status === "" || filter.status === "all" || invoice.status.toLowerCase() === filter.status.toLowerCase()
+
+      const dateMatch = filter.date === "" || invoice.date === filter.date
+
+      const invoiceNumberMatch =
+        filter.invoiceNumber === "" || invoice.invoiceNumber.toLowerCase().includes(filter.invoiceNumber.toLowerCase())
+
+      return clientMatch && statusMatch && dateMatch && invoiceNumberMatch
+    })
+  }, [invoices, filter])
+
+  const paginatedInvoices = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredInvoices.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+  }, [filteredInvoices, currentPage])
+
+  const totalPages = Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE)
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" }).format(amount)
   }
 
-useEffect(() => {
-  const filtered = invoices.filter(
-    (invoice) =>
-      (filter.client === "" || invoice.clientId.toLowerCase().includes(filter.client.toLowerCase())) &&
-      (filter.status === "" || invoice.status === filter.status) &&
-      (filter.date === "" || invoice.date === filter.date),
-  )
-
-  setFilteredInvoices(filtered)
-  console.log("filtered", invoices)
-}, [invoices, filter])
-
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A"
+    try {
+      const date = parse(dateString, "yyyy-MM-dd HH:mm a", new Date())
+      if (isNaN(date.getTime())) {
+        throw new Error("Invalid date")
+      }
+      return format(date, "d 'de' MMMM, yyyy HH:mm", { locale: es })
+    } catch (error) {
+      console.error("Error parsing date:", error)
+      return dateString // Return the original string if parsing fails
+    }
+  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Reporte Detallado de Facturas</h2>
-      <div className="flex gap-4 mb-4">
+    <div className="container mx-auto p-4 space-y-6">
+      <h2 className="text-2xl font-bold">Reporte Detallado de Facturas</h2>
+      <div className="flex flex-wrap gap-4 mb-4">
         <Input
-          placeholder="Filtrar por cliente"
-          value={filter.client}
-          onChange={(e) => handleFilterChange("client", e.target.value)}
+          placeholder="Número de factura"
+          value={filter.invoiceNumber}
+          onChange={(e) => handleFilterChange("invoiceNumber", e.target.value)}
+          className="w-full sm:w-auto"
         />
-        <Select onValueChange={(value) => handleFilterChange("status", value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="Pendiente">Pendiente</SelectItem>
-            <SelectItem value="Finalizado">Finalizado</SelectItem>
-            <SelectItem value="Anulado">Anulado</SelectItem>
-          </SelectContent>
-        </Select>
-        <Input type="date" value={filter.date} onChange={(e) => handleFilterChange("date", e.target.value)} />
+        <Input
+          type="date"
+          value={filter.date}
+          onChange={(e) => handleFilterChange("date", e.target.value)}
+          className="w-full sm:w-auto"
+        />
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Número de Factura</TableHead>
-            <TableHead>Fecha</TableHead>
-            <TableHead>Total</TableHead>
-            <TableHead>Saldo Pendiente</TableHead>
-            <TableHead>Estado</TableHead>
-            <TableHead>Método de Pago</TableHead>
-            <TableHead>Descuento</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredInvoices.map((invoice) => (
-            <TableRow key={invoice.id}>
-              <TableCell>{invoice.invoiceNumber}</TableCell>
-              <TableCell>{invoice.pickupDate || "N/A"}</TableCell>
-              <TableCell>${invoice.total}</TableCell>
-              <TableCell>${invoice.pendingBalance}</TableCell>
-              <TableCell>{invoice.status}</TableCell>
-              <TableCell>{invoice.paymentType}</TableCell>
-              <TableCell>${invoice.discount || 0}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      {paginatedInvoices.length > 0 ? (
+        <>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Número de Factura</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Saldo Pendiente</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Método de Pago</TableHead>
+                  <TableHead>Monto Pagado</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedInvoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell>{invoice.invoiceNumber}</TableCell>
+                    <TableCell>{formatDate(invoice.pickupDate)}</TableCell>
+                    <TableCell>{formatCurrency(invoice.total)}</TableCell>
+                    <TableCell>{formatCurrency(invoice.pendingBalance)}</TableCell>
+                    <TableCell>{invoice.status}</TableCell>
+                    <TableCell>{invoice.paymentType}</TableCell>
+                    <TableCell>{formatCurrency(invoice.amountPaid)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex justify-between items-center mt-4">
+            <p>
+              Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1} -{" "}
+              {Math.min(currentPage * ITEMS_PER_PAGE, filteredInvoices.length)} de {filteredInvoices.length} facturas
+            </p>
+            <div className="flex gap-2">
+              <Button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+                Anterior
+              </Button>
+              <Button
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        </>
+      ) : (
+        <p className="text-center text-gray-500">No se encontraron facturas que coincidan con los filtros aplicados.</p>
+      )}
     </div>
   )
 }

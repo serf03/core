@@ -24,8 +24,6 @@ export async function initializeUserFirebase() {
       measurementId: firebaseConfig.measurementId,
     }
 
-    console.log("Configuración de Firebase del usuario:", firebaseConfigs)
-
     // Check if an app with this name already exists
     const existingApp = getApps().find((app) => app.name === `user-${firebaseConfig.userId}`)
 
