@@ -51,18 +51,19 @@ const TabsReport = ({ invoices }) => {
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A"
+    if (!dateString) return "N/A";
     try {
-      const date = parse(dateString, "yyyy-MM-dd HH:mm a", new Date())
+      const date = parse(dateString, "yyyy-MM-dd hh:mm a", new Date()); // Usar 'hh' para 12 horas
       if (isNaN(date.getTime())) {
-        throw new Error("Invalid date")
+        throw new Error("Invalid date");
       }
-      return format(date, "d 'de' MMMM, yyyy HH:mm", { locale: es })
+      return format(date, "d 'de' MMMM, yyyy hh:mm a", { locale: es }); // 'hh' y 'a' son compatibles
     } catch (error) {
-      console.error("Error parsing date:", error)
-      return dateString // Return the original string if parsing fails
+      console.error("Error parsing date:", error);
+      return dateString; // Return the original string if parsing fails
     }
-  }
+  };
+  
 
   return (
     <div className="container mx-auto p-4 space-y-6">
