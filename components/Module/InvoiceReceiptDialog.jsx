@@ -76,6 +76,19 @@ export default function InvoiceReceiptDialog({ invoice }) {
                     </div>
                 ))}
 
+                <div className="text-center p-3 text-2xs">
+                <h style={{
+                        fontSize: '1rem',
+                        lineHeight: '0.5rem',
+                        marginBottom: '0.5rem',
+                        fontWeight: 'bold',
+                    }}
+                    className="text-2xs"
+                >
+                    Nota: {invoice.nota || "....."}
+                </h>
+
+                </div>
                 <div className="mb-1">
                     <div className="flex justify-between font-bold text-sm mt-0.5">
                         <span>Total</span>

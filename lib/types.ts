@@ -8,7 +8,7 @@ interface Expense {
 
 // Definición de tipos
 type UserRole = 'Administrador' | 'Facturador' | 'Operador' | 'Cliente'
-type InvoiceStatus = 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada' | 'Parcialmente Pagada' | 'Finalizado' | 'InvoiceDetail'
+type InvoiceStatus = 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada' | 'Parcialmente Pagada' | 'Finalizado' | 'InvoiceDetail' | 'Cancelada'
 
 interface User {
     id?: string
@@ -87,6 +87,7 @@ interface Invoice {
     amountPaid?: number,
     invoiceNumber: string
     pendingBalance: number
+    nota?: string
 }
 interface InvoiceItemDetails {
     product: string

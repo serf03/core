@@ -13,7 +13,7 @@ import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 
 function getInitials(name: string) {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
-}
+} 
 
 function getAvatarColor(name: string) {
     const colors = [
@@ -100,6 +100,7 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                             <Button
                                 variant="destructive"
                                 onClick={() => props.handleCancelInvoice(invoice)}
+                                disabled={invoice.status === 'Finalizado' || invoice.status === 'Entregada'}
                                 size="sm"
                             >
                                 <XCircle className="h-4 w-4 mr-2" />
@@ -267,10 +268,7 @@ function TabsFacturacion(props: TabsFacturacionProps) {
                                                         <TableCell>{invoice.date}</TableCell>
                                                         <TableCell>{invoice.pickupDate}</TableCell>
                                                         <TableCell>
-                                                            <div
-                                                                className="w-6 h-6 rounded-full"
-                                                                style={{ backgroundColor: invoice.color }}
-                                                            ></div>
+                                                            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: invoice.color }}></div>
                                                         </TableCell>
                                                         <TableCell>
                                                             <div className="flex space-x-2">

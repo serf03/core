@@ -1,642 +1,652 @@
-import { useAuth } from '@/components/context/AuthContext'
+import { useAuth } from "@/components/context/AuthContext"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import { Attachment, Client, GarmentType, Invoice, InvoiceItem, Product } from '@/lib/types'
-import { AnimatePresence, motion } from 'framer-motion'
-import { AlertCircle, Banknote, Calendar, CheckCircle2, CreditCard, Palette, Plus, Search, X } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
-import { toast } from 'react-hot-toast'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type { Attachment, Client, GarmentType, Invoice, InvoiceItem, Product } from "@/lib/types"
+import { AnimatePresence, motion } from "framer-motion"
+import { AlertCircle, Banknote, Calendar, CheckCircle2, CreditCard, FileText, Palette, Plus, Search, X } from "lucide-react"
+import type React from "react"
+import { useEffect, useState } from "react"
+import { toast } from "react-hot-toast"
+import { Textarea } from "../ui/textarea"
 
 interface CrearFacturaModuleProps {
-    isCreateInvoiceDialogOpen: boolean
-    setIsCreateInvoiceDialogOpen: (open: boolean) => void
-    clientFilter: string
-    setClientFilter: (filter: string) => void
-    clientFilterType: 'cedula' | 'phone'
-    setClientFilterType: (type: 'cedula' | 'phone') => void
-    newInvoice: Omit<Invoice, 'id' | 'date'>
-    setNewInvoice: React.Dispatch<React.SetStateAction<Omit<Invoice, 'id' | 'date'>>>
-    filterClients: () => Client[]
-    products: Product[]
-    garmentTypes: GarmentType[]
-    calculatePrice: (productId: string, garmentTypeId: string) => number
-    calculatePickupDate: (items: InvoiceItem[]) => string
-    handleCreateInvoice: (paymentType: string, amountPaid?: number) => void
-    getLastInvoiceNumber: () => Promise<number>
-    resetInvoice: () => void
-    invoices: Invoice[]
+  isCreateInvoiceDialogOpen: boolean
+  setIsCreateInvoiceDialogOpen: (open: boolean) => void
+  clientFilter: string
+  setClientFilter: (filter: string) => void
+  clientFilterType: "cedula" | "phone"
+  setClientFilterType: (type: "cedula" | "phone") => void
+  newInvoice: Omit<Invoice, "id" | "date"> & { nota?: string }
+  setNewInvoice: React.Dispatch<React.SetStateAction<Omit<Invoice, "id" | "date"> & { nota?: string }>>
+  filterClients: () => Client[]
+  products: Product[]
+  garmentTypes: GarmentType[]
+  calculatePrice: (productId: string, garmentTypeId: string) => number
+  calculatePickupDate: (items: InvoiceItem[]) => string
+  handleCreateInvoice: (paymentType: string, amountPaid?: number, nota?: string) => void
+  getLastInvoiceNumber: () => Promise<number>
+  resetInvoice: () => void
+  invoices: Invoice[]
 }
 
 function CrearInvoiceModule(props: CrearFacturaModuleProps) {
-    const { user } = useAuth()
+  const { user } = useAuth()
 
-    const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
-    const [paymentType, setPaymentType] = useState<'cash' | 'card' | 'pending'>('cash')
-    const [amountPaid, setAmountPaid] = useState(0)
-    const [openStates, setOpenStates] = useState<{ [key: number]: boolean }>({});
-    const [selectedClientDebt, setSelectedClientDebt] = useState<number>(0)
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false)
+  const [paymentType, setPaymentType] = useState<"cash" | "card" | "pending">("cash")
+  const [amountPaid, setAmountPaid] = useState(0)
+  const [openStates, setOpenStates] = useState<{ [key: number]: boolean }>({})
+  const [selectedClientDebt, setSelectedClientDebt] = useState<number>(0)
 
-    useEffect(() => {
-        const filteredClients = props.filterClients()
-        if (filteredClients.length === 1) {
-            const client = filteredClients[0]
-            if (client.id !== props.newInvoice.clientId) {
-                props.setNewInvoice(prev => ({
-                    ...prev,
-                    clientId: client.id || "",
-                }))
-                // Calculate client's debt
-                const clientDebt = props.invoices
-                    .filter(invoice => invoice.clientId === client.id && invoice.status !== 'Cancelada' && invoice.pendingBalance > 0)
-                    .reduce((total, invoice) => total + invoice.pendingBalance, 0)
-                setSelectedClientDebt(clientDebt)
-            }
+  useEffect(() => {
+    const filteredClients = props.filterClients()
+    if (filteredClients.length === 1) {
+      const client = filteredClients[0]
+      if (client.id !== props.newInvoice.clientId) {
+        props.setNewInvoice((prev) => ({
+          ...prev,
+          clientId: client.id || "",
+        }))
+        // Calculate client's debt
+        const clientDebt = props.invoices
+          .filter(
+            (invoice) => invoice.clientId === client.id && invoice.status !== "Cancelada" && invoice.pendingBalance > 0,
+          )
+          .reduce((total, invoice) => total + invoice.pendingBalance, 0)
+        setSelectedClientDebt(clientDebt)
+      }
+    }
+  }, [
+    props.clientFilter,
+    props.clientFilterType,
+    props.invoices,
+    props.filterClients,
+    props.newInvoice.clientId,
+    props.setNewInvoice,
+  ])
+
+  useEffect(() => {
+    const newTotal = props.newInvoice.items.reduce(
+      (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((attSum, att) => attSum + att.price, 0),
+      0,
+    )
+    props.setNewInvoice((prev) => ({ ...prev, total: newTotal }))
+  }, [props.newInvoice.items])
+
+  const handleAddAttachment = (itemIndex: number) => {
+    const newItems = [...props.newInvoice.items]
+    newItems[itemIndex].attachments.push({
+      id: Date.now().toString(),
+      name: "",
+      price: 0,
+      idAdministrador: `${user?.uid}`,
+    })
+    props.setNewInvoice({ ...props.newInvoice, items: newItems })
+  }
+
+  const handleRemoveAttachment = (itemIndex: number, attachmentIndex: number) => {
+    const newItems = [...props.newInvoice.items]
+    newItems[itemIndex].attachments.splice(attachmentIndex, 1)
+    props.setNewInvoice({ ...props.newInvoice, items: newItems })
+  }
+
+  const handleAttachmentChange = (
+    itemIndex: number,
+    attachmentIndex: number,
+    field: keyof Attachment,
+    value: string | number,
+  ) => {
+    props.setNewInvoice((prev) => {
+      const newItems = [...prev.items]
+
+      if (newItems[itemIndex] && newItems[itemIndex].attachments[attachmentIndex]) {
+        newItems[itemIndex].attachments[attachmentIndex] = {
+          ...newItems[itemIndex].attachments[attachmentIndex],
+          [field]: field === "price" ? Number(value) : value,
         }
-    }, [props.clientFilter, props.clientFilterType, props.invoices, props.filterClients, props.newInvoice.clientId, props.setNewInvoice])
+      }
 
-    useEffect(() => {
-        const newTotal = props.newInvoice.items.reduce(
-            (sum, item) => sum + (item.price * item.quantity) + item.attachments.reduce((attSum, att) => attSum + att.price, 0),
-            0
-        );
-        props.setNewInvoice(prev => ({ ...prev, total: newTotal }));
-    }, [props.newInvoice.items]);
+      const newTotal = newItems.reduce(
+        (sum, item) =>
+          sum + item.price * item.quantity + item.attachments.reduce((attSum, att) => attSum + att.price, 0),
+        0,
+      )
 
-    const handleAddAttachment = (itemIndex: number) => {
-        const newItems = [...props.newInvoice.items]
-        newItems[itemIndex].attachments.push({
-            id: Date.now().toString(),
-            name: '',
-            price: 0,
-            idAdministrador: `${user?.uid}`
-        })
-        props.setNewInvoice({ ...props.newInvoice, items: newItems })
+      return {
+        ...prev,
+        items: newItems,
+        total: newTotal,
+      }
+    })
+  }
+
+  const handlePaymentSubmit = () => {
+    if (paymentType === "cash" || paymentType === "card") {
+      if (amountPaid < props.newInvoice.total) {
+        props.handleCreateInvoice(paymentType, amountPaid, props.newInvoice.nota)
+      } else {
+        props.handleCreateInvoice(paymentType, props.newInvoice.total, props.newInvoice.nota)
+      }
+    } else if (paymentType === "pending") {
+      props.handleCreateInvoice(paymentType, 0, props.newInvoice.nota)
     }
+    setIsPaymentDialogOpen(false)
+    props.setIsCreateInvoiceDialogOpen(false)
+  }
 
-    const handleRemoveAttachment = (itemIndex: number, attachmentIndex: number) => {
-        const newItems = [...props.newInvoice.items]
-        newItems[itemIndex].attachments.splice(attachmentIndex, 1)
-        props.setNewInvoice({ ...props.newInvoice, items: newItems })
-    }
-
-    const handleAttachmentChange = (
-        itemIndex: number,
-        attachmentIndex: number,
-        field: keyof Attachment,
-        value: string | number
-    ) => {
-        props.setNewInvoice(prev => {
-            const newItems = [...prev.items];
-
-            if (newItems[itemIndex] && newItems[itemIndex].attachments[attachmentIndex]) {
-                newItems[itemIndex].attachments[attachmentIndex] = {
-                    ...newItems[itemIndex].attachments[attachmentIndex],
-                    [field]: field === 'price' ? Number(value) : value,
-                };
-            }
-
-            const newTotal = newItems.reduce(
-                (sum, item) => sum + (item.price * item.quantity) + item.attachments.reduce((attSum, att) => attSum + att.price, 0),
-                0
-            );
-
-            return {
-                ...prev,
-                items: newItems,
-                total: newTotal,
-            };
-        });
-    };
-
-    const handlePaymentSubmit = () => {
-        if (paymentType === 'cash' || paymentType === 'card') {
-            if (amountPaid < props.newInvoice.total) {
-                props.handleCreateInvoice(paymentType, amountPaid);
-            } else {
-                props.handleCreateInvoice(paymentType, props.newInvoice.total);
-            }
-        } else if (paymentType === 'pending') {
-            props.handleCreateInvoice(paymentType, 0);
-        }
-        setIsPaymentDialogOpen(false);
-        props.setIsCreateInvoiceDialogOpen(false);
-    };
-
-    const isInvoiceValid = () => {
-        return (
-            props.newInvoice.clientId &&
-            props.newInvoice.items.length > 0 &&
-            props.newInvoice.items.every(item => item.productId && item.garmentTypeId && item.quantity > 0)
-        )
-    }
-
-    const handleAddProduct = () => {
-        props.setNewInvoice({
-            ...props.newInvoice,
-            items: [
-                ...props.newInvoice.items,
-                { productId: '', garmentTypeId: '', quantity: 1, price: 0, attachments: [], idAdministrador: `${user?.uid}` },
-            ],
-        })
-    }
-
-    const handleRemoveProduct = (index: number) => {
-        const newItems = [...props.newInvoice.items]
-        newItems.splice(index, 1)
-        props.setNewInvoice({
-            ...props.newInvoice,
-            items: newItems,
-            total: newItems.reduce(
-                (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
-                0
-            ),
-        })
-    }
-
-    const handleProductChange = (index: number, field: keyof InvoiceItem, value: string | number) => {
-        props.setNewInvoice(prev => {
-            const newItems = [...prev.items];
-            newItems[index] = { ...newItems[index], [field]: value };
-
-            if (field === 'productId' || field === 'garmentTypeId' || field === 'quantity') {
-                const productId = field === 'productId' ? value as string : newItems[index].productId;
-                const garmentTypeId = field === 'garmentTypeId' ? value as string : newItems[index].garmentTypeId;
-                const quantity = field === 'quantity' ? Number(value) : newItems[index].quantity;
-
-                const product = props.products.find(p => p.id === productId);
-                const garmentType = props.garmentTypes.find(g => g.id === garmentTypeId);
-
-                if (product && garmentType) {
-                    const basePrice = product.price + garmentType.basePrice;
-                    newItems[index].price = basePrice;
-                } else {
-                    newItems[index].price = 0;
-                }
-
-                newItems[index].quantity = quantity;
-            }
-
-            const newTotal = newItems.reduce(
-                (sum, item) => sum + (item.price * item.quantity) + item.attachments.reduce((attSum, att) => attSum + att.price, 0),
-                0
-            );
-
-            return {
-                ...prev,
-                items: newItems,
-                total: newTotal,
-            };
-        });
-    };
-
-    const handleOpenChange = (index: number, isOpen: boolean) => {
-        setOpenStates(prev => ({
-            ...prev,
-            [index]: isOpen
-        }));
-    };
-
-    const handleClientSelection = (clientId: string) => {
-        if (clientId !== props.newInvoice.clientId) {
-            props.setNewInvoice(prev => ({
-                ...prev,
-                clientId: clientId,
-            }))
-            // Calculate client's debt
-            const clientDebt = props.invoices
-                .filter(invoice => invoice.clientId === clientId && invoice.status !== 'Cancelada' && invoice.pendingBalance > 0)
-                .reduce((total, invoice) => total + invoice.pendingBalance, 0)
-            setSelectedClientDebt(clientDebt)
-        }
-    }
-
+  const isInvoiceValid = () => {
     return (
-        <>
-            <Dialog open={props.isCreateInvoiceDialogOpen} onOpenChange={props.setIsCreateInvoiceDialogOpen}>
-                <DialogContent className="max-w-7xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold">Crear Nueva Factura</DialogTitle>
-                    </DialogHeader>
-                    <form
-                        onSubmit={(e) => {
-                            e.preventDefault()
-                            if (isInvoiceValid()) {
-                                setIsPaymentDialogOpen(true)
-                            } else {
-                                toast.error("Por favor, complete todos los campos requeridos")
-                            }
-                        }}
-                        className="space-y-6"
-                    >
-                        {props.newInvoice.clientId && (
-                            <div className="mb-4">
-                                {selectedClientDebt > 0 ? (
-                                    <Alert variant="destructive">
-                                        <AlertCircle className="h-4 w-4" />
-                                        <AlertTitle>Advertencia</AlertTitle>
-                                        <AlertDescription>
-                                            Este cliente tiene una deuda pendiente de ${selectedClientDebt.toFixed(2)}.
-                                        </AlertDescription>
-                                    </Alert>
-                                ) : (
-                                    <Alert variant="default">
-                                        <CheckCircle2 className="h-4 w-4" />
-                                        <AlertTitle>Cliente seleccionado</AlertTitle>
-                                        <AlertDescription>
-                                            El cliente ha sido seleccionado correctamente.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-                            </div>
-                        )}
-                        <div className="grid gap-6">
-                            {/* Cliente Filter */}
-                            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                                <Label htmlFor="clientFilter" className="sm:text-right">
-                                    Buscar Cliente
-                                </Label>
-                                <div className="relative col-span-2">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                    <Input
-                                        id="clientFilter"
-                                        value={props.clientFilter}
-                                        onChange={(e) => props.setClientFilter(e.target.value)}
-                                        className="pl-10"
-                                        placeholder="Buscar por cédula o teléfono"
-                                    />
-                                </div>
-                                <Select
-                                    value={props.clientFilterType}
-                                    onValueChange={(value: 'cedula' | 'phone') => props.setClientFilterType(value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="cedula">Cédula</SelectItem>
-                                        <SelectItem value="phone">Teléfono</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+      props.newInvoice.clientId &&
+      props.newInvoice.items.length > 0 &&
+      props.newInvoice.items.every((item) => item.productId && item.garmentTypeId && item.quantity > 0)
+    )
+  }
 
-                            {/* Cliente Select */}
-                            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                                <Label htmlFor="client" className="sm:text-right">
-                                    Cliente
-                                </Label>
-                                <Select
-                                    value={props.newInvoice.clientId}
-                                    onValueChange={handleClientSelection}
-                                >
-                                    <SelectTrigger className="col-span-2">
-                                        <SelectValue placeholder="Seleccione un cliente" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {props.filterClients().map((client) => (
-                                            <SelectItem key={client.id} value={client.id || ""}>
-                                                {client.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {/* <Button variant="outline" type="button" onClick={() => console.log("Add new client functionality to be implemented")}>
+  const handleAddProduct = () => {
+    props.setNewInvoice({
+      ...props.newInvoice,
+      items: [
+        ...props.newInvoice.items,
+        { productId: "", garmentTypeId: "", quantity: 1, price: 0, attachments: [], idAdministrador: `${user?.uid}` },
+      ],
+    })
+  }
+
+  const handleRemoveProduct = (index: number) => {
+    const newItems = [...props.newInvoice.items]
+    newItems.splice(index, 1)
+    props.setNewInvoice({
+      ...props.newInvoice,
+      items: newItems,
+      total: newItems.reduce(
+        (sum, item) => sum + item.price * item.quantity + item.attachments.reduce((sum, att) => sum + att.price, 0),
+        0,
+      ),
+    })
+  }
+
+  const handleProductChange = (index: number, field: keyof InvoiceItem, value: string | number) => {
+    props.setNewInvoice((prev) => {
+      const newItems = [...prev.items]
+      newItems[index] = { ...newItems[index], [field]: value }
+
+      if (field === "productId" || field === "garmentTypeId" || field === "quantity") {
+        const productId = field === "productId" ? (value as string) : newItems[index].productId
+        const garmentTypeId = field === "garmentTypeId" ? (value as string) : newItems[index].garmentTypeId
+        const quantity = field === "quantity" ? Number(value) : newItems[index].quantity
+
+        const product = props.products.find((p) => p.id === productId)
+        const garmentType = props.garmentTypes.find((g) => g.id === garmentTypeId)
+
+        if (product && garmentType) {
+          const basePrice = product.price + garmentType.basePrice
+          newItems[index].price = basePrice
+        } else {
+          newItems[index].price = 0
+        }
+
+        newItems[index].quantity = quantity
+      }
+
+      const newTotal = newItems.reduce(
+        (sum, item) =>
+          sum + item.price * item.quantity + item.attachments.reduce((attSum, att) => attSum + att.price, 0),
+        0,
+      )
+
+      return {
+        ...prev,
+        items: newItems,
+        total: newTotal,
+      }
+    })
+  }
+
+  const handleOpenChange = (index: number, isOpen: boolean) => {
+    setOpenStates((prev) => ({
+      ...prev,
+      [index]: isOpen,
+    }))
+  }
+
+  const handleClientSelection = (clientId: string) => {
+    if (clientId !== props.newInvoice.clientId) {
+      props.setNewInvoice((prev) => ({
+        ...prev,
+        clientId: clientId,
+      }))
+      // Calculate client's debt
+      const clientDebt = props.invoices
+        .filter(
+          (invoice) => invoice.clientId === clientId && invoice.status !== "Cancelada" && invoice.pendingBalance > 0,
+        )
+        .reduce((total, invoice) => total + invoice.pendingBalance, 0)
+      setSelectedClientDebt(clientDebt)
+    }
+  }
+
+  // const resetInvoice = () => {
+  //   props.setNewInvoice({ clientId: "", items: [], color: "", total: 0, nota: "" })
+  // }
+
+  return (
+    <>
+      <Dialog open={props.isCreateInvoiceDialogOpen} onOpenChange={props.setIsCreateInvoiceDialogOpen}>
+        <DialogContent className="max-w-7xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Crear Nueva Factura</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (isInvoiceValid()) {
+                setIsPaymentDialogOpen(true)
+              } else {
+                toast.error("Por favor, complete todos los campos requeridos")
+              }
+            }}
+            className="space-y-6"
+          >
+            {props.newInvoice.clientId && (
+              <div className="mb-4">
+                {selectedClientDebt > 0 ? (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Advertencia</AlertTitle>
+                    <AlertDescription>
+                      Este cliente tiene una deuda pendiente de ${selectedClientDebt.toFixed(2)}.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert variant="default">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <AlertTitle>Cliente seleccionado</AlertTitle>
+                    <AlertDescription>El cliente ha sido seleccionado correctamente.</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+            <div className="grid gap-6">
+              {/* Cliente Filter */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                <Label htmlFor="clientFilter" className="sm:text-right">
+                  Buscar Cliente
+                </Label>
+                <div className="relative col-span-2">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <Input
+                    id="clientFilter"
+                    value={props.clientFilter}
+                    onChange={(e) => props.setClientFilter(e.target.value)}
+                    className="pl-10"
+                    placeholder="Buscar por cédula o teléfono"
+                  />
+                </div>
+                <Select
+                  value={props.clientFilterType}
+                  onValueChange={(value: "cedula" | "phone") => props.setClientFilterType(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cedula">Cédula</SelectItem>
+                    <SelectItem value="phone">Teléfono</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Cliente Select */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                <Label htmlFor="client" className="sm:text-right">
+                  Cliente
+                </Label>
+                <Select value={props.newInvoice.clientId} onValueChange={handleClientSelection}>
+                  <SelectTrigger className="col-span-2">
+                    <SelectValue placeholder="Seleccione un cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {props.filterClients().map((client) => (
+                      <SelectItem key={client.id} value={client.id || ""}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {/* <Button variant="outline" type="button" onClick={() => console.log("Add new client functionality to be implemented")}>
                                     <Plus className="h-4 w-4 mr-2" />
                                 </Button> */}
-                            </div>
+              </div>
 
-                            {/* Agregar Producto Button */}
-                            <div className="flex justify-end">
-                                <Button type="button" onClick={handleAddProduct}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                </Button>
+              {/* Agregar Producto Button */}
+              <div className="flex justify-end">
+                <Button type="button" onClick={handleAddProduct}>
+                  <Plus className="h-4 w-4 mr-2" />
+                </Button>
+              </div>
+              {/* Invoice Items Table */}
+              <div className="col-span-4 overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Servicio</TableHead>
+                      <TableHead>Prenda</TableHead>
+                      <TableHead>Cantidad</TableHead>
+                      <TableHead>Precio</TableHead>
+                      <TableHead>Attachments</TableHead>
+                      <TableHead>Subtotal</TableHead>
+                      <TableHead>Acción</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {props.newInvoice.items.map((item, index) => (
+                      <TableRow key={`${index}-${item.productId}-${item.garmentTypeId}`}>
+                        <TableCell>
+                          <Select
+                            value={item.productId}
+                            onValueChange={(value) => handleProductChange(index, "productId", value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccione un producto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {props.products.map((product) => (
+                                <SelectItem key={product.id} value={product.id || ""}>
+                                  {product.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Popover open={openStates[index]} onOpenChange={(isOpen) => handleOpenChange(index, isOpen)}>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full justify-start">
+                                {item.garmentTypeId
+                                  ? props.garmentTypes.find((type) => type.id === item.garmentTypeId)?.name
+                                  : "Seleccione tipo"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[200px] p-0">
+                              <Command>
+                                <CommandInput placeholder="Buscar tipo de prenda..." />
+                                <CommandEmpty>No se encontraron resultados.</CommandEmpty>
+                                <CommandGroup>
+                                  {props.garmentTypes
+                                    .sort((a, b) => a.name.localeCompare(b.name))
+                                    .map((type) => (
+                                      <CommandItem
+                                        key={type.id}
+                                        onSelect={() => {
+                                          handleProductChange(index, "garmentTypeId", type.id || "")
+                                          handleOpenChange(index, false)
+                                        }}
+                                        className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                                      >
+                                        {type.name}
+                                      </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleProductChange(index, "quantity", Number.parseInt(e.target.value) || 1)
+                            }
+                            min={1}
+                          />
+                        </TableCell>
+                        <TableCell>${item.price.toFixed(2)}</TableCell>
+                        <TableCell>
+                          {item.attachments.map((attachment, attIndex) => (
+                            <div key={attachment.id} className="flex items-center space-x-2 mb-2">
+                              <Input
+                                placeholder="Nombre"
+                                value={attachment.name}
+                                onChange={(e) => handleAttachmentChange(index, attIndex, "name", e.target.value)}
+                                className="w-1/2"
+                              />
+                              <Input
+                                type="number"
+                                placeholder="Precio"
+                                value={attachment.price}
+                                onChange={(e) =>
+                                  handleAttachmentChange(index, attIndex, "price", Number.parseFloat(e.target.value))
+                                }
+                                className="w-1/4"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleRemoveAttachment(index, attIndex)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
                             </div>
-                            {/* Invoice Items Table */}
-                            <div className="col-span-4 overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Servicio</TableHead>
-                                            <TableHead>Prenda</TableHead>
-                                            <TableHead>Cantidad</TableHead>
-                                            <TableHead>Precio</TableHead>
-                                            <TableHead>Attachments</TableHead>
-                                            <TableHead>Subtotal</TableHead>
-                                            <TableHead>Acción</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {props.newInvoice.items.map((item, index) => (
-                                            <TableRow key={`${index}-${item.productId}-${item.garmentTypeId}`}>
-                                                <TableCell>
-                                                    <Select
-                                                        value={item.productId}
-                                                        onValueChange={(value) => handleProductChange(index, 'productId', value)}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Seleccione un producto" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {props.products.map((product) => (
-                                                                <SelectItem key={product.id} value={product.id || ""}>
-                                                                    {product.name}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Popover open={openStates[index]} onOpenChange={(isOpen) => handleOpenChange(index, isOpen)}>
-                                                        <PopoverTrigger asChild>
-                                                            <Button variant="outline" className="w-full justify-start">
-                                                                {item.garmentTypeId ? props.garmentTypes.find(type => type.id === item.garmentTypeId)?.name : "Seleccione tipo"}
-                                                            </Button>
-                                                        </PopoverTrigger>
-                                                        <PopoverContent className="w-[200px] p-0">
-                                                            <Command>
-                                                                <CommandInput placeholder="Buscar tipo de prenda..." />
-                                                                <CommandEmpty>No se encontraron resultados.</CommandEmpty>
-                                                                <CommandGroup>
-                                                                    {props.garmentTypes
-                                                                        .sort((a, b) => a.name.localeCompare(b.name))
-                                                                        .map((type) => (
-                                                                            <CommandItem
-                                                                                key={type.id}
-                                                                                onSelect={() => {
-                                                                                    handleProductChange(index, 'garmentTypeId', type.id || "");
-                                                                                    handleOpenChange(index, false);
-                                                                                }}
-                                                                                className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                                                                            >
-                                                                                {type.name}
-                                                                            </CommandItem>
-                                                                        ))}
-                                                                </CommandGroup>
-                                                            </Command>
-                                                        </PopoverContent>
-                                                    </Popover>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Input
-                                                        type="number"
-                                                        value={item.quantity}
-                                                        onChange={(e) => handleProductChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                                                        min={1}
-                                                    />
-                                                </TableCell>
-                                                <TableCell>${item.price.toFixed(2)}</TableCell>
-                                                <TableCell>
-                                                    {item.attachments.map((attachment, attIndex) => (
-                                                        <div key={attachment.id} className="flex items-center space-x-2 mb-2">
-                                                            <Input
-                                                                placeholder="Nombre"
-                                                                value={attachment.name}
-                                                                onChange={(e) => handleAttachmentChange(index, attIndex, 'name', e.target.value)}
-                                                                className="w-1/2"
-                                                            />
-                                                            <Input
-                                                                type="number"
-                                                                placeholder="Precio"
-                                                                value={attachment.price}
-                                                                onChange={(e) => handleAttachmentChange(index, attIndex, 'price', parseFloat(e.target.value))}
-                                                                className="w-1/4"
-                                                            />
-                                                            <Button
-                                                                variant="destructive"
-                                                                size="sm"
-                                                                onClick={() => handleRemoveAttachment(index, attIndex)}
-                                                            >
-                                                                <X className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    ))}
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled
-                                                        onClick={() => handleAddAttachment(index)}
-                                                    >
-                                                        <Plus className="h-4 w-4 mr-2" />
-                                                        Agregar Attachment
-                                                    </Button>
-                                                </TableCell>
-                                                <TableCell>
-                                                    ${((item.price * item.quantity) + item.attachments.reduce((sum, att) => sum + att.price, 0)).toFixed(2)}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Button
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        onClick={() => handleRemoveProduct(index)}
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-
-                            {/* Pickup Date */}
-                            <div className="grid grid-cols-1 sm:grid-cols-8 items-center gap-4">
-                                <Label className="sm:text-right sm:col-span-2 font-bold">
-                                    Entrega:
-                                </Label>
-                                <div className="font-bold sm:col-span-6">
-                                    <div className="flex items-center p-2 border rounded-lg bg-gray-100">
-                                        <Calendar className="mr-2 text-gray-500" size={18} />
-                                        <span>{props.calculatePickupDate(props.newInvoice.items)}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Color Picker */}
-                            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                                <Label htmlFor="color" className="sm:text-right">
-                                    Color
-                                </Label>
-                                <div className="relative col-span-3">
-                                    <Palette className="absolute left-3 top-1/2 transform -translate-y-1/2  text-gray-400" size={18} />
-                                    <Input
-                                        id="color"
-                                        type="color"
-                                        value={props.newInvoice.color}
-                                        onChange={(e) =>
-                                            props.setNewInvoice({ ...props.newInvoice, color: e.target.value })
-                                        }
-                                        className="pl-10"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Total */}
-                            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
-                                <Label className="sm:text-right sm:col-span-3 font-bold">Total:</Label>
-                                <div className="font-bold text-2xl">${props.newInvoice.total.toFixed(2)}</div>
+                          ))}
+                          <Button variant="outline" size="sm" disabled onClick={() => handleAddAttachment(index)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Agregar Attachment
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          $
+                          {(
+                            item.price * item.quantity +
+                            item.attachments.reduce((sum, att) => sum + att.price, 0)
+                          ).toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="destructive" size="sm" onClick={() => handleRemoveProduct(index)}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="space-y-2 p-2">
+                            <Label htmlFor="editCategory" className="text-sm font-medium">
+                                Categoría
+                            </Label>
+                            <div className="relative">
+                            <FileText className="absolute left-3 top-3 text-gray-400" size={18} />
+                                <Textarea
+                                    id="editCategory"
+                                    value={props.newInvoice.nota || ""}
+                                    onChange={(e) => props.setNewInvoice({ ...props.newInvoice, nota: e.target.value })}
+                                    className="w-full min-h-[100px] pl-10 pr-4 py-2 rounded-md border border-input bg-background text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                    placeholder="Categoría del tipo de prenda"
+                                    aria-label="Categoría del tipo de prenda"
+                                />
                             </div>
                         </div>
+              </div>
 
-                        <DialogFooter>
-                            <Button type="submit" disabled={!isInvoiceValid()}>
-                                Proceder al Pago
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
+              {/* Pickup Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-8 items-center gap-4">
+                <Label className="sm:text-right sm:col-span-2 font-bold">Entrega:</Label>
+                <div className="font-bold sm:col-span-6">
+                  <div className="flex items-center p-2 border rounded-lg bg-gray-100">
+                    <Calendar className="mr-2 text-gray-500" size={18} />
+                    <span>{props.calculatePickupDate(props.newInvoice.items)}</span>
+                  </div>
+                </div>
+              </div>
 
-            <AnimatePresence>
-                {isPaymentDialogOpen && (
-                    <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-                        <DialogContent className="sm:max-w-[425px]">
-                            <DialogHeader>
-                                <DialogTitle className="text-2xl font-bold text-center">Método de Pago</DialogTitle>
-                            </DialogHeader>
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 20 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <form onSubmit={(e) => {
-                                    e.preventDefault()
-                                    handlePaymentSubmit()
-                                }}
-                                    className="space-y-6"
-                                >
-                                    <div className="space-y-4">
-                                        <Label htmlFor="paymentType" className="text-lg font-semibold">
-                                            Seleccione el tipo de pago
-                                        </Label>
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => setPaymentType('cash')}
-                                                type="button"
-                                                className={`p-4 rounded-lg flex flex-col items-center justify-center transition-colors ${paymentType === 'cash'
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-secondary text-secondary-foreground'
-                                                    }`}
-                                            >
-                                                <Banknote className="h-8 w-8 mb-2" />
-                                                <span>Efectivo</span>
-                                            </motion.button>
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => setPaymentType('card')}
-                                                type="button"
-                                                className={`p-4 rounded-lg flex flex-col items-center justify-center transition-colors ${paymentType === 'card'
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-secondary text-secondary-foreground'
-                                                    }`}
-                                            >
-                                                <CreditCard className="h-8 w-8 mb-2" />
-                                                <span>Tarjeta</span>
-                                            </motion.button>
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => setPaymentType('pending')}
-                                                type="button"
-                                                className={`p-4 rounded-lg flex flex-col items-center justify-center transition-colors ${paymentType === 'pending'
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-secondary text-secondary-foreground'
-                                                    }`}
-                                            >
-                                                <Calendar className="h-8 w-8 mb-2" />
-                                                <span>Pagar al recoger</span>
-                                            </motion.button>
-                                        </div>
-                                    </div>
-                                    <AnimatePresence>
-                                        {paymentType === 'cash' && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                transition={{ duration: 0.3 }}
-                                                className="space-y-4"
-                                            >
-                                                <Label htmlFor="amountPaid" className="text-lg font-semibold">
-                                                    Monto Pagado
-                                                </Label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl font-bold">
-                                                        $
-                                                    </span>
-                                                    <Input
-                                                        id="amountPaid"
-                                                        type="number"
-                                                        value={amountPaid}
-                                                        onChange={(e) => setAmountPaid(parseFloat(e.target.value))}
-                                                        min={0}
-                                                        step={0.01}
-                                                        className="text-2xl font-bold pl-8 pr-4 py-6 w-full border-4 border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary"
-                                                    />
-                                                </div>
-                                                {amountPaid >= props.newInvoice.total && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        className="bg-green-100 border-4 border-green-400 text-green-700 px-4 py-3 rounded-lg relative"
-                                                        role="alert"
-                                                    >
-                                                        <strong className="font-bold text-lg">Cambio: </strong>
-                                                        <span className="block sm:inline text-2xl font-bold">
-                                                            ${(amountPaid - props.newInvoice.total).toFixed(2)}
-                                                        </span>
-                                                    </motion.div>
-                                                )}
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: 0.3 }}
-                                    >
-                                        <DialogFooter>
-                                            <Button type="submit" className="w-full text-lg">
-                                                Confirmar Pago
-                                            </Button>
-                                        </DialogFooter>
-                                    </motion.div>
-                                </form>
-                            </motion.div>
-                        </DialogContent>
-                    </Dialog>
-                )}
-            </AnimatePresence>
-        </>
-    )
+              {/* Nota */}
+
+              {/* Color Picker */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                <Label htmlFor="color" className="sm:text-right">
+                  Color
+                </Label>
+                <div className="relative col-span-3">
+                  <Palette className="absolute left-3 top-1/2 transform -translate-y-1/2  text-gray-400" size={18} />
+                  <Input
+                    id="color"
+                    type="color"
+                    value={props.newInvoice.color}
+                    onChange={(e) => props.setNewInvoice({ ...props.newInvoice, color: e.target.value })}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                <Label className="sm:text-right sm:col-span-3 font-bold">Total:</Label>
+                <div className="font-bold text-2xl">${props.newInvoice.total.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="submit" disabled={!isInvoiceValid()}>
+                Proceder al Pago
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AnimatePresence>
+        {isPaymentDialogOpen && (
+          <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-center">Método de Pago</DialogTitle>
+              </DialogHeader>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    handlePaymentSubmit()
+                  }}
+                  className="space-y-6"
+                >
+                  <div className="space-y-4">
+                    <Label htmlFor="paymentType" className="text-lg font-semibold">
+                      Seleccione el tipo de pago
+                    </Label>
+                    <div className="grid grid-cols-3 gap-4">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setPaymentType("cash")}
+                        type="button"
+                        className={`p-4 rounded-lg flex flex-col items-center justify-center transition-colors ${
+                          paymentType === "cash"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
+                        }`}
+                      >
+                        <Banknote className="h-8 w-8 mb-2" />
+                        <span>Efectivo</span>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setPaymentType("card")}
+                        type="button"
+                        className={`p-4 rounded-lg flex flex-col items-center justify-center transition-colors ${
+                          paymentType === "card"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
+                        }`}
+                      >
+                        <CreditCard className="h-8 w-8 mb-2" />
+                        <span>Tarjeta</span>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setPaymentType("pending")}
+                        type="button"
+                        className={`p-4 rounded-lg flex flex-col items-center justify-center transition-colors ${
+                          paymentType === "pending"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
+                        }`}
+                      >
+                        <Calendar className="h-8 w-8 mb-2" />
+                        <span>Pagar al recoger</span>
+                      </motion.button>
+                    </div>
+                  </div>
+                  <AnimatePresence>
+                    {paymentType === "cash" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4"
+                      >
+                        <Label htmlFor="amountPaid" className="text-lg font-semibold">
+                          Monto Pagado
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-xl font-bold">
+                            $
+                          </span>
+                          <Input
+                            id="amountPaid"
+                            type="number"
+                            value={amountPaid}
+                            onChange={(e) => setAmountPaid(Number.parseFloat(e.target.value))}
+                            min={0}
+                            step={0.01}
+                            className="text-2xl font-bold pl-8 pr-4 py-6 w-full border-4 border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary"
+                          />
+                        </div>
+                        {amountPaid >= props.newInvoice.total && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="bg-green-100 border-4 border-green-400 text-green-700 px-4 py-3 rounded-lg relative"
+                            role="alert"
+                          >
+                            <strong className="font-bold text-lg">Cambio: </strong>
+                            <span className="block sm:inline text-2xl font-bold">
+                              ${(amountPaid - props.newInvoice.total).toFixed(2)}
+                            </span>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+                    <DialogFooter>
+                      <Button type="submit" className="w-full text-lg">
+                        Confirmar Pago
+                      </Button>
+                    </DialogFooter>
+                  </motion.div>
+                </form>
+              </motion.div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </AnimatePresence>
+    </>
+  )
 }
 
 export default CrearInvoiceModule

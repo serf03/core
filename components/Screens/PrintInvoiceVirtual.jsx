@@ -54,12 +54,20 @@ const PrintInvoiceKiosk = ({ invoice, onClose, formattedPickupDate }) => {
                         <div class="receipt">
                             <div class="text-center mb-4">
                                 <h2 class="font-bold">Factura</h2>
-                                <p class="text-xs">Factura #${invoice.invoiceNumber}</p>
-                                          ${!isPaid ? `
+                                <p class="text-xs">Factura #${
+                                  invoice.invoiceNumber
+                                }</p>
+                                          ${
+                                            !isPaid
+                                              ? `
                                     <p class="font-bold text-red mt-1">
-                                        PAGO PARCIAL - Saldo pendiente: $${pendingBalance.toFixed(2)}
+                                        PAGO PARCIAL - Saldo pendiente: $${pendingBalance.toFixed(
+                                          2
+                                        )}
                                     </p>
-                                ` : ''}
+                                `
+                                              : ""
+                                          }
                             </div>
                             <div class="border-t border-b py-2 mb-2">
                                 <div class="flex">
@@ -69,27 +77,57 @@ const PrintInvoiceKiosk = ({ invoice, onClose, formattedPickupDate }) => {
                                 <div class="flex">
                                     <span class="font-bold">Estado:</span>
                                     <span>
-                                        <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${invoice.color};"></div>
+                                        <div style="width: 8px; height: 8px; border-radius: 50%; background-color: ${
+                                          invoice.color
+                                        };"></div>
                                     </span>
                                 </div>
                                 <div class="flex">
                                     <span class="font-bold">Fecha de Retiro:</span>
-                                    <span>${new Date(invoice.pickupDate).toLocaleString("es-ES", { hour: "numeric", minute: "numeric", hour12: true })}</span>
+                                    <span>${new Date(
+                                      invoice.pickupDate
+                                    ).toLocaleString("es-ES", {
+                                      hour: "numeric",
+                                      minute: "numeric",
+                                      hour12: true,
+                                    })}</span>
                                 </div>
                             </div>
-                            ${invoice.items.map(item => `
+                            ${invoice.items
+                              .map(
+                                (item) => `
                                 <div class="border-b py-2 mb-2">
                                     <div class="flex font-bold">
                                         <span>${item.product}</span>
-                                        <span>$${(item.price * item.quantity).toFixed(2)}</span>
+                                        <span>$${(
+                                          item.price * item.quantity
+                                        ).toFixed(2)}</span>
                                     </div>
                                     <div class="text-xs">
                                         <p>Prenda: ${item.garmentType}</p>
-                                        <p>Cant: ${item.quantity} x $${item.price.toFixed(2)}</p>
-                                        <p>Descripción: ${item.description || 'No disponible'}</p>
+                                        <p>Cant: ${
+                                          item.quantity
+                                        } x $${item.price.toFixed(2)}</p>
+                                        <p>Descripción: ${
+                                          item.description || "No disponible"
+                                        }</p>
                                     </div>
                                 </div>
-                            `).join('')}
+                            `
+                              )
+                              .join("")}
+                            <div class="text-center p-3 text-2xs">
+                                <h style={{
+                                    fontSize: '1rem',
+                                    lineHeight: '0.5rem',
+                                    marginBottom: '0.5rem',
+                                    fontWeight: 'bold',
+                                }}
+                                class="text-2xs"
+                                >
+                                 Nota: ${invoice.nota || "....."}
+                                </h>
+                            </div>
                             <div class="mb-4">
                                 <div class="flex font-bold mt-2">
                                     <span>Total</span>
@@ -97,17 +135,27 @@ const PrintInvoiceKiosk = ({ invoice, onClose, formattedPickupDate }) => {
                                 </div>
                                 <div class="flex mt-2">
                                     <span>Monto Pagado</span>
-                                    <span>$${invoice.amountPaid.toFixed(2)}</span>
+                                    <span>$${invoice.amountPaid.toFixed(
+                                      2
+                                    )}</span>
                                 </div>
-                                ${!isPaid ? `
+                                ${
+                                  !isPaid
+                                    ? `
                                     <div class="flex font-bold mt-2">
                                         <span>Saldo Pendiente</span>
-                                        <span>$${pendingBalance.toFixed(2)}</span>
+                                        <span>$${pendingBalance.toFixed(
+                                          2
+                                        )}</span>
                                     </div>
-                                ` : ''}
+                                `
+                                    : ""
+                                }
                             </div>
                             <div class="text-center text-xs">
-                                <p class="font-bold">Cliente: ${invoice.client || "No disponible"}</p>
+                                <p class="font-bold">Cliente: ${
+                                  invoice.client || "No disponible"
+                                }</p>
                                 <div class="qr-code">
                                     ${qrCodeSvg}
                                 </div>

@@ -521,6 +521,8 @@ console.log(dailyProduction);
         const finalizadoInvoice: Invoice = {
           ...invoiceToFinalizado,
           status: 'Finalizado',
+          pendingBalance: 0,
+          
         }
         await firebaseServices.updateInvoice(finalizadoInvoice)
         setIsCancelDialogOpen(false)
@@ -580,8 +582,14 @@ console.log(dailyProduction);
           ...invoiceToMakePayment,
           amountPaid: (invoiceToMakePayment.amountPaid || 0) + amount,
           pendingBalance: invoiceToMakePayment.pendingBalance - amount,
-          status: invoiceToMakePayment.pendingBalance - amount <= 0 ? 'Completada' : 'Parcialmente Pagada'
-        }
+          status:
+            invoiceToMakePayment.pendingBalance - amount === 0
+              ? invoiceToMakePayment.status === 'Finalizado'
+                ? 'Finalizado'
+                : 'Completada'
+              : 'Parcialmente Pagada'
+        };
+        
         await firebaseServices.updateInvoice(updatedInvoice)
         setIsMakePaymentDialogOpen(false)
         setInvoiceToMakePayment(null)
