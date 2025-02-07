@@ -40,7 +40,6 @@ function TabsFacturacion(props: TabsFacturacionProps) {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     const renderInvoiceItem = (invoice: Invoice) => {
-        console.log(invoice)
         const client = props.clients.find(c => c.id === invoice.clientId);
         return (
             <Card key={invoice.id} className="mb-4">

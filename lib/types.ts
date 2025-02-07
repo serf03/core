@@ -9,14 +9,16 @@ interface Expense {
 // Definición de tipos
 type UserRole = 'Administrador' | 'Facturador' | 'Operador' | 'Cliente'
 type InvoiceStatus = 'Pendiente' | 'En Proceso' | 'Lavando' | 'Planchando' | 'Completada' | 'Entregada' | 'Cancelada' | 'Parcialmente Pagada' | 'Finalizado' | 'InvoiceDetail' | 'Cancelada'
+type AccessUser = "reports" | "billing" | "users" | "clients" | "products" | "garmentTypes" | "expenses" | "cierre"
 
 interface User {
     id?: string
     name: string
     email: string
-    clave: string
     role: UserRole,
     idAdministrador: string;
+    password: string;
+    accessibleViews: AccessUser[]
 }
 
 interface PaymentOption {
@@ -145,5 +147,5 @@ interface UserFirebaseConfig {
     measurementId: string,
     userId: string
   }
-export type { UserFirebaseConfig, Attachment, Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, OptionType, PaymentOption, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole };
+export type {AccessUser, UserFirebaseConfig, Attachment, Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, OptionType, PaymentOption, Printers, Product, ProductionRecord, TabsFacturacionProps, User, UserRole };
 

@@ -29,15 +29,12 @@ export async function initializeUserFirebase() {
 
     if (existingApp) {
       userApp = existingApp
-      console.log("Usando la aplicación Firebase existente")
     } else {
       userApp = initializeApp(firebaseConfigs, `user-${firebaseConfig.userId}`)
-      console.log("Nueva aplicación Firebase inicializada")
     }
 
     userDb = getFirestore(userApp)
 
-    console.log("Firebase del usuario ha sido inicializado correctamente.")
     return { app: userApp, db: userDb }
   } catch (error) {
     console.error("Error al inicializar Firebase del usuario:", error)

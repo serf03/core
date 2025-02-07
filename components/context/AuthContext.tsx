@@ -1,11 +1,13 @@
 "use client";
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '../../lib/firebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
+import { User as Users } from '@/lib/types';
+import { auth, db } from '@/lib/firebaseClient'; // Usar SDK del cliente
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean; // Agregar estado de carga
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -14,40 +16,49 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true); // Inicializar loading como true
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => { // Usar auth del cliente
       if (currentUser) {
-        setUser(currentUser); // Actualizar estado del usuario
-        localStorage.setItem('uid', currentUser.uid); // Guardar uid en localStorage
+        setUser(currentUser);
+        getUserById(currentUser.uid).then((user) => {
+          if (user) {
+            const userWithRole = { 
+              id: user.id, 
+              idAdm: user.role === "Administrador" ? user.id : user.idAdministrador, 
+              role: user.role 
+            };
+            localStorage.setItem('user', JSON.stringify(userWithRole));
+            localStorage.setItem('uid', user.idAdministrador ?? '');
+          }
+        });
       } else {
-        setUser(null); // No hay usuario, se establece como null
-        localStorage.removeItem('uid'); // Eliminar uid de localStorage
+        setUser(null);
+        localStorage.removeItem('uid');
       }
-      setLoading(false); // Cambiar loading a false después de validar el usuario
+      setLoading(false);
     });
-
-    return () => unsubscribe(); // Desuscribirse en la limpieza
+    return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const getUserById = async (userId: string): Promise<Users | null> => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userDoc = await getDoc(doc(db, "users", userId)); // Usar db del cliente
+      return userDoc.exists() ? ({ id: userDoc.id, ...userDoc.data() } as Users) : null;
     } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+      console.error("Error fetching user:", error);
+      return null;
     }
   };
 
+  const login = async (email: string, password: string) => {
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
   const logout = async () => {
-    try {
-      await signOut(auth);
-      localStorage.removeItem('uid'); // Eliminar uid de localStorage al cerrar sesión
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
-    }
+    await signOut(auth);
+    localStorage.removeItem('uid');
   };
 
   return (
@@ -59,8 +70,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { getUserFirebaseInstances } from "@/lib/userFirebase"
 import { collection, getDocs, query, orderBy, where, getDoc, doc } from "firebase/firestore"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -91,11 +91,8 @@ const CashClosing = () => {
   const [alertInfo, setAlertInfo] = useState<AlertInfo | null>(null)
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchCierres()
-  }, [])
 
-  const fetchCierres = async () => {
+  const fetchCierres = useCallback(async () => {
     try {
       const { db } = await getUserFirebaseInstances()
       const cierresQuery = query(
@@ -127,7 +124,12 @@ const CashClosing = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    fetchCierres()
+  }, [fetchCierres])
+
 
   const fetchInvoiceDetails = async (invoiceIds: string[]) => {
     try {

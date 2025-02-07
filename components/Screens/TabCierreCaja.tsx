@@ -193,8 +193,7 @@ export default function TabCierreCaja() {
     setPaidReceivables(paidReceivables)
     setNewReceivables(newReceivables)
 
-    console.log("Unclosed Invoices:", unclosedInvoices)
-    console.log("New Receivables:", newReceivables)
+    
   }
 
   const openClosingDialog = async () => {
@@ -236,20 +235,20 @@ export default function TabCierreCaja() {
         newReceivables: newReceivables.map((inv) => inv.id),
       })
 
-      console.log("Closing data:", {
-        fecha: closingDate,
-        totalEsperado,
-        totalContado,
-        diferencia,
-        detalles,
-        idAdministrador: AdminId(),
-        invoices: closedInvoices.map((inv) => inv.id),
-        totalAmount,
-        receivableAmount,
-        collectedAmount,
-        paidReceivables,
-        newReceivables: newReceivables.map((inv) => inv.id),
-      })
+      // console.log("Closing data:", {
+      //   fecha: closingDate,
+      //   totalEsperado,
+      //   totalContado,
+      //   diferencia,
+      //   detalles,
+      //   idAdministrador: AdminId(),
+      //   invoices: closedInvoices.map((inv) => inv.id),
+      //   totalAmount,
+      //   receivableAmount,
+      //   collectedAmount,
+      //   paidReceivables,
+      //   newReceivables: newReceivables.map((inv) => inv.id),
+      // })
 
       // Update invoices with isClosed flag
       const batch = writeBatch(db)

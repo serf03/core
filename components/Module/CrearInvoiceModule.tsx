@@ -63,14 +63,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
         setSelectedClientDebt(clientDebt)
       }
     }
-  }, [
-    props.clientFilter,
-    props.clientFilterType,
-    props.invoices,
-    props.filterClients,
-    props.newInvoice.clientId,
-    props.setNewInvoice,
-  ])
+  }, [props.clientFilter, props.clientFilterType, props.invoices, props.filterClients, props.newInvoice.clientId, props.setNewInvoice, props])
 
   useEffect(() => {
     const newTotal = props.newInvoice.items.reduce(
@@ -78,7 +71,7 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
       0,
     )
     props.setNewInvoice((prev) => ({ ...prev, total: newTotal }))
-  }, [props.newInvoice.items])
+  }, [props, props.newInvoice.items])
 
   const handleAddAttachment = (itemIndex: number) => {
     const newItems = [...props.newInvoice.items]
@@ -320,9 +313,6 @@ function CrearInvoiceModule(props: CrearFacturaModuleProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                {/* <Button variant="outline" type="button" onClick={() => console.log("Add new client functionality to be implemented")}>
-                                    <Plus className="h-4 w-4 mr-2" />
-                                </Button> */}
               </div>
 
               {/* Agregar Producto Button */}

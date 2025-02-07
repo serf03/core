@@ -1,17 +1,51 @@
 //firebaseServices.ts
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, updateDoc, setDoc } from 'firebase/firestore';
 import { getUserFirebaseInstances } from './userFirebase';
+import { db as dbadm } from "@/lib/firebaseClient";
 import { Client, Expense, GarmentType, Invoice, InvoiceDetail, InvoiceItem, InvoiceItemDetails, Product, ProductionRecord, User, UserFirebaseConfig } from './types';
-
 function AdminId() {
-
-    const uid = localStorage.getItem("uid")// Asegúrate de que el uid está disponible 
-    return uid;
+    const user = localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user") as string) : null; // Asegúrate de que el uid está disponible 
+    return user.idAdm;
 }
 
+export const addUsers = async (userData: Omit<User, "id">): Promise<string> => {
+    try {
+      const response = await fetch("/api/addUser", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      })
+  
+      if (!response.ok) {
+        throw new Error("Failed to add user")
+      }
+  
+      const data = await response.json()
+      return data.uid
+    } catch (error) {
+      console.error("Error adding user:", error)
+      throw error
+    }
+}
+export const getUserById = async (id: string): Promise<User | null> => {
+    try {
+      const userDoc = await getDoc(doc(dbadm, "users", id))
+      if (userDoc.exists()) {
+        return { id: userDoc.id, ...userDoc.data() } as User
+      } else {
+        console.log("No user found with that ID")
+        return null
+      }
+    } catch (error) {
+      console.error("Error fetching user:", error)
+      return null
+    }
+  }
 export async function getUserFirebaseConfig(userId: string): Promise<UserFirebaseConfig | null> {
     const { db } = await getUserFirebaseInstances();
-    const docRef = doc(db, "userConfigs", userId)
+    const docRef = doc(db, "users", userId)
     const docSnap = await getDoc(docRef)
   
     if (docSnap.exists()) {
@@ -115,7 +149,6 @@ const getInvoiceWithDetails = async (invoiceId: string): Promise<InvoiceDetail> 
             })
         );
 
-        console.log(itemsDetails)
         // Filtrar los elementos válidos en caso de que `processInvoiceItem` devuelva null
         const validItemsDetails: InvoiceItemDetails[] = itemsDetails.filter(item => item !== null) as InvoiceItemDetails[];
 
@@ -262,7 +295,6 @@ const addUser = async (user: Omit<User, 'id'>) => {
 };
 
 const updateUser = async (user: User) => {
-    const { db } = await getUserFirebaseInstances();
     if (user.idAdministrador !== AdminId()) {
         throw new Error("No tienes permiso para actualizar este usuario.");
     }
@@ -272,7 +304,7 @@ const updateUser = async (user: User) => {
         throw new Error("ID de usuario no definido.");
     }
 
-    await updateDoc(doc(db, 'users', user.id), { ...user });
+    await updateDoc(doc(dbadm, 'users', user.id), { ...user });
     return user;
 };
 
@@ -296,11 +328,10 @@ const getUsers = async () => {
 };
 
 const subscribeToUsers = async (callback: (users: User[]) => void) => {
-    const { db } = await getUserFirebaseInstances();
-    return onSnapshot(collection(db, 'users'), (snapshot) => {
+    return onSnapshot(collection(dbadm, 'users'), (snapshot) => {
         const users = snapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() } as User))
-            .filter(user => user.idAdministrador === AdminId());
+            .filter(user => user.idAdministrador == AdminId());
         callback(users);
     });
 };

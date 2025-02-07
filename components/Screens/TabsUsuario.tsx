@@ -1,62 +1,92 @@
+import * as firebaseServices from "@/lib/firebaseServices"
+import type { User, UserRole } from "@/lib/types"
+import { Edit, Trash, UserPlus } from "lucide-react"
+import { useCallback, useMemo, useState } from "react"
+import { toast } from "react-hot-toast"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { Button } from "../ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
+import { TabsContent } from "../ui/tabs"
+import { MultiSelect } from "../ui/multi-select" // Assuming you have this component
 
+type AccessibleView = "reports" | "billing" | "users" | "clients" | "products" | "garmentTypes" | "expenses" | "cierre"
 
-import * as firebaseServices from '@/lib/firebaseServices'
-import { User, UserRole } from '@/lib/types'
-import { Edit, Trash, UserPlus } from 'lucide-react'
-import { useCallback, useState } from 'react'
-import { toast } from 'react-hot-toast'
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
-import { Button } from '../ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
-import { Input } from '../ui/input'
-import { Label } from '../ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { TabsContent } from '../ui/tabs'
 function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
 }
 
 function getAvatarColor(name: string) {
   const colors = [
-    'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
-    'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
-  ];
-  const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-  return colors[index];
+    "bg-red-500",
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-yellow-500",
+    "bg-purple-500",
+    "bg-pink-500",
+    "bg-indigo-500",
+    "bg-teal-500",
+  ]
+  const index = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length
+  return colors[index]
 }
-
 
 interface TabsUsuarioProps {
   users: User[]
   searchTerm: string
   setSearchTerm: (term: string) => void
+  currentUser: User | null
 }
 
-export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUsuarioProps) {
+export default function TabsUsuario({ users, searchTerm, setSearchTerm, currentUser }: TabsUsuarioProps) {
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false)
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false)
-  const [newUser, setNewUser] = useState<User>({
-    name: '', email: '', clave: '', role: 'Facturador', idAdministrador: ''
-  });
+  const [newUser, setNewUser] = useState<Omit<User, "id">>({
+    name: "",
+    email: "",
+    password: "",
+    role: "Facturador",
+    idAdministrador: currentUser?.id || "",
+    accessibleViews: [],
+  })
   const [editingUser, setEditingUser] = useState<User | null>(null)
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+  const accessibleViews: AccessibleView[] = useMemo(() => [
+    "reports",
+    "billing",
+    "users",
+    "clients",
+    "products",
+    "garmentTypes",
+    "expenses",
+    "cierre",
+  ], []);
 
   const handleAddUser = useCallback(async () => {
     try {
       if (!newUser?.name || !newUser?.email || !newUser?.role) {
-        throw new Error('Todos los campos son requeridos')
+        throw new Error("Nombre, correo electrónico y rol son campos requeridos")
       }
-      await firebaseServices.addUser(newUser)
-      // setNewUser({ name: '', email: '',})
+      if (!newUser.password) {
+        throw new Error("La contraseña es requerida para nuevos usuarios")
+      }
+      await firebaseServices.addUsers(newUser)
       setIsAddUserDialogOpen(false)
-      toast.success('Usuario agregado exitosamente')
+      toast.success("Usuario agregado exitosamente")
     } catch (error) {
       console.error("Error adding user: ", error)
       toast.error(error instanceof Error ? error.message : "Error al agregar el usuario")
@@ -67,28 +97,34 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
     if (editingUser) {
       try {
         if (!editingUser.name || !editingUser.email || !editingUser.role) {
-          throw new Error('Todos los campos son requeridos')
+          throw new Error("Todos los campos son requeridos")
         }
-        await firebaseServices.updateUser(editingUser)
+        const userToUpdate: User = {
+          ...editingUser,
+          accessibleViews: editingUser.role === "Administrador" ? accessibleViews : editingUser.accessibleViews,
+          password: editingUser.password || "", // Provide a default empty string if password is undefined
+        }
+        await firebaseServices.updateUser(userToUpdate)
         setEditingUser(null)
         setIsEditUserDialogOpen(false)
-        toast.success('Usuario actualizado exitosamente')
+        toast.success("Usuario actualizado exitosamente")
       } catch (error) {
         console.error("Error updating user: ", error)
         toast.error(error instanceof Error ? error.message : "Error al actualizar el usuario")
       }
     }
-  }, [editingUser])
+  }, [editingUser, accessibleViews])
 
   const handleDeleteUser = useCallback(async (id: string) => {
     try {
       await firebaseServices.deleteUser(id)
-      toast.success('Usuario eliminado exitosamente')
+      toast.success("Usuario eliminado exitosamente")
     } catch (error) {
       console.error("Error deleting user: ", error)
       toast.error("Error al eliminar el usuario")
     }
   }, [])
+
 
   return (
     <TabsContent value="users" className="space-y-4">
@@ -104,11 +140,7 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <Input
-              placeholder="Buscar usuario..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <Input placeholder="Buscar usuario..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <Table>
             <TableHeader>
@@ -123,26 +155,24 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
-
                     <div className="flex items-center space-x-2">
                       <Avatar className={`h-10 w-10 ${getAvatarColor(user.name)}`}>
                         <AvatarImage src={`https://api.dicebear.com/6.x/initials/svg?seed=${user.name}`} />
                         <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                       </Avatar>
-                      <span>    {user.name}</span>
+                      <span>{user.name}</span>
                     </div>
-
-
-
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.role}</TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
-                      <Button onClick={() => {
-                        setEditingUser(user)
-                        setIsEditUserDialogOpen(true)
-                      }}>
+                      <Button
+                        onClick={() => {
+                          setEditingUser(user)
+                          setIsEditUserDialogOpen(true)
+                        }}
+                      >
                         <Edit className="h-4 w-4 mr-2" />
                         Editar
                       </Button>
@@ -165,10 +195,13 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
           <DialogHeader>
             <DialogTitle>Agregar Nuevo Usuario</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => {
-            e.preventDefault()
-            handleAddUser()
-          }} className="space-y-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleAddUser()
+            }}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="name">Nombre</Label>
               <Input
@@ -182,8 +215,19 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
               <Label htmlFor="email">Correo Electrónico</Label>
               <Input
                 id="email"
+                type="email"
                 value={newUser?.email}
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                value={newUser?.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                 required
               />
             </div>
@@ -203,7 +247,22 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
                   <SelectItem value="Cliente">Cliente</SelectItem>
                 </SelectContent>
               </Select>
-
+            </div>
+            <div className="space-y-2">
+              <Label>Vistas Accesibles</Label>
+              <MultiSelect
+                options={accessibleViews.map((view) => ({ label: view, value: view }))}
+                selected={newUser.accessibleViews}
+                onChange={(selected: string[]) =>
+                  setNewUser({ ...newUser, accessibleViews: selected as AccessibleView[] })
+                }
+                placeholder="Seleccionar vistas accesibles"
+              />
+              {newUser.role === "Administrador" && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Los administradores tienen acceso a todas las vistas por defecto.
+                </p>
+              )}
             </div>
             <Button type="submit">Agregar Usuario</Button>
           </form>
@@ -217,10 +276,13 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
             <DialogTitle>Editar Usuario</DialogTitle>
           </DialogHeader>
           {editingUser && (
-            <form onSubmit={(e) => {
-              e.preventDefault()
-              handleUpdateUser()
-            }} className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleUpdateUser()
+              }}
+              className="space-y-4"
+            >
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Nombre</Label>
                 <Input
@@ -244,17 +306,34 @@ export default function TabsUsuario({ users, searchTerm, setSearchTerm }: TabsUs
                 <Label htmlFor="edit-role">Rol</Label>
                 <Select
                   value={editingUser.role}
-                  onValueChange={(value: UserRole) => setNewUser({ ...newUser, role: value })}
+                  onValueChange={(value: UserRole) => setEditingUser({ ...editingUser, role: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar rol" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="user">Usuario</SelectItem>
-                    <SelectItem value="editor">Editor</SelectItem>
+                    <SelectItem value="Administrador">Administrador</SelectItem>
+                    <SelectItem value="Facturador">Facturador</SelectItem>
+                    <SelectItem value="Operador">Operador</SelectItem>
+                    <SelectItem value="Cliente">Cliente</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Vistas Accesibles</Label>
+                <MultiSelect
+                  options={accessibleViews.map((view) => ({ label: view, value: view }))}
+                  selected={editingUser.accessibleViews}
+                  onChange={(selected: string[]) =>
+                    setEditingUser({ ...editingUser, accessibleViews: selected as AccessibleView[] })
+                  }
+                  placeholder="Seleccionar vistas accesibles"
+                />
+                {editingUser.role === "Administrador" && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Los administradores tienen acceso a todas las vistas por defecto.
+                  </p>
+                )}
               </div>
               <Button type="submit">Actualizar Usuario</Button>
             </form>

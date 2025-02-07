@@ -6,7 +6,6 @@ const PrintInvoiceKiosk = ({ invoice, onClose, formattedPickupDate }) => {
     useEffect(() => {
 
 
-        console.log(invoice)
         const printWindow = window.open('', '', 'width=800,height=600');
         if (printWindow) {
             // Create a temporary div to render the QR code
@@ -179,7 +178,7 @@ const PrintInvoiceKiosk = ({ invoice, onClose, formattedPickupDate }) => {
         }
 
         onClose();
-    }, [invoice, onClose]);
+    }, [formattedPickupDate, invoice, onClose]);
 
     return null;
 };

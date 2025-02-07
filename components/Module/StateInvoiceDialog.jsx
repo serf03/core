@@ -14,8 +14,6 @@ function StateFacturaDialog(props) {
     };
 
 
-    console.log(props);
-
     return (
         <Dialog open={props.isChangeInvoiceStatusDialogOpen} onOpenChange={props.setIsChangeInvoiceStatusDialogOpen}>
             <DialogContent>

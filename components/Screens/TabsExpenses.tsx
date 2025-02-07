@@ -82,7 +82,7 @@ export default function TabsExpenses() {
     const onSubmit = async (values: z.infer<typeof expenseSchema>) => {
         try {
 
-            console.log(editingExpense);
+    
 
 
             if (editingExpense) {

@@ -59,30 +59,7 @@ const CashClosingModule: React.FC = () => {
   const [idAdministrador, setIdAdministrador] = useState("")
   const [isClosed, setIsClosed] = useState(false)
   const { toast } = useToast()
-
-  useEffect(() => {
-    const storedIdAdministrador = localStorage.getItem("uid")
-    if (storedIdAdministrador) {
-      setIdAdministrador(storedIdAdministrador)
-      checkCashClosingStatus()
-      fetchInitialAmount(storedIdAdministrador)
-    }
-  }, [])
-
-  useEffect(() => {
-    calculateTotals()
-  }, [denominations, accountsReceivable, expenses, initialAmount])
-
-  const checkCashClosingStatus = () => {
-    const today = new Date().toISOString().split("T")[0]
-    const storedClosingDate = localStorage.getItem("lastCashClosingDate")
-    if (storedClosingDate === today) {
-      setIsClosed(true)
-    } else {
-      setIsClosed(false)
-    }
-  }
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const fetchInitialAmount = async (idAdministrador: string) => {
     try {
       const { db } = await getUserFirebaseInstances()
@@ -104,6 +81,43 @@ const CashClosingModule: React.FC = () => {
       })
     }
   }
+  useEffect(() => {
+    const storedIdAdministrador = localStorage.getItem("uid")
+    if (storedIdAdministrador) {
+      setIdAdministrador(storedIdAdministrador)
+      checkCashClosingStatus()
+      fetchInitialAmount(storedIdAdministrador)
+    }
+  }, [fetchInitialAmount])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const calculateTotals = () => {
+    const totalCash = denominations.reduce((sum, d) => sum + d.value * d.quantity, 0)
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+    const calculatedExpectedBalance = initialAmount + totalCash - totalExpenses
+    const calculatedDifference = totalCash - calculatedExpectedBalance
+    const calculatedTotalGeneral = totalCash + accountsReceivable
+
+    setCashCounted(totalCash)
+    setExpectedBalance(calculatedExpectedBalance)
+    setDifference(calculatedDifference)
+    setTotalGeneral(calculatedTotalGeneral)
+  }
+
+  useEffect(() => {
+    calculateTotals()
+  }, [denominations, accountsReceivable, expenses, initialAmount, calculateTotals])
+
+  const checkCashClosingStatus = () => {
+    const today = new Date().toISOString().split("T")[0]
+    const storedClosingDate = localStorage.getItem("lastCashClosingDate")
+    if (storedClosingDate === today) {
+      setIsClosed(true)
+    } else {
+      setIsClosed(false)
+    }
+  }
+
+
 
   const handleDenominationChange = (index: number, quantity: number) => {
     const newDenominations = [...denominations]
@@ -121,19 +135,7 @@ const CashClosingModule: React.FC = () => {
     setExpenses(newExpenses)
   }
 
-  const calculateTotals = () => {
-    const totalCash = denominations.reduce((sum, d) => sum + d.value * d.quantity, 0)
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
-    const calculatedExpectedBalance = initialAmount + totalCash - totalExpenses
-    const calculatedDifference = totalCash - calculatedExpectedBalance
-    const calculatedTotalGeneral = totalCash + accountsReceivable
-
-    setCashCounted(totalCash)
-    setExpectedBalance(calculatedExpectedBalance)
-    setDifference(calculatedDifference)
-    setTotalGeneral(calculatedTotalGeneral)
-  }
-
+ 
   const handleCloseCash = async () => {
     if (!idAdministrador || isClosed) return
 
